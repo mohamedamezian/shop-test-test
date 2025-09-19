@@ -2,7 +2,7 @@
 
 client_id = "02fee5ebd0c35e7e65f2bdb8944e1ffa"
 name = "IG-DevTools"
-application_url = "https://example.com"
+application_url = "https://shop-test-test.vercel.app/"
 embedded = true
 
 [build]
@@ -12,26 +12,29 @@ automatically_update_urls_on_dev = true
 api_version = "2025-10"
 
   [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
-
-  [[webhooks.subscriptions]]
   topics = [ "app/scopes_update" ]
   uri = "/webhooks/app/scopes_update"
 
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products, write_metaobject_definitions"
+scopes = "write_metaobject_definitions,write_products"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
-
+redirect_urls = [ "https://shop-test-test.vercel.app/auth/callback" ]
 
 [metaobjects.app.instagram_post]
 name = "Instagram Post"
-access.admin = "merchant_read_write"
-access.storefront = "public_read"
-capabilities.publishable = true
+
+  [metaobjects.app.instagram_post.access]
+  admin = "merchant_read_write"
+  storefront = "public_read"
+
+  [metaobjects.app.instagram_post.capabilities]
+  publishable = true
 
 [metaobjects.app.instagram_post.fields.media]
 name = "List Reference"
@@ -41,13 +44,15 @@ type = "file_reference"
 name = "Post"
 type = "json"
 
-
-
 [metaobjects.app.instagram_list]
 name = "Instagram List"
-access.admin = "merchant_read_write"
-access.storefront = "public_read"
-capabilities.publishable = true
+
+  [metaobjects.app.instagram_list.access]
+  admin = "merchant_read_write"
+  storefront = "public_read"
+
+  [metaobjects.app.instagram_list.capabilities]
+  publishable = true
 
 [metaobjects.app.instagram_list.fields.post_reference]
 name = "Post Reference"

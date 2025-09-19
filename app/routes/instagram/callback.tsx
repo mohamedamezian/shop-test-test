@@ -17,6 +17,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   
   let tokenResponse;
   try {
+    console.log("Token exchange redirect_uri:", redirectUri);
     tokenResponse = await fetch(tokenUrl);
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();

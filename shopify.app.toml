@@ -1,13 +1,12 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "589b791562008b9a42ff73ec3cf72062"
-name = "ig-test-test-test"
+client_id = "02fee5ebd0c35e7e65f2bdb8944e1ffa"
+name = "IG-DevTools"
 application_url = "https://example.com"
 embedded = true
 
 [build]
 automatically_update_urls_on_dev = true
-include_config_on_deploy = true
 
 [webhooks]
 api_version = "2025-10"
@@ -22,7 +21,34 @@ api_version = "2025-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "write_products, write_metaobject_definitions"
 
 [auth]
 redirect_urls = [ "https://example.com/api/auth" ]
+
+
+[metaobjects.app.instagram_post]
+name = "Instagram Post"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+capabilities.publishable = true
+
+[metaobjects.app.instagram_post.fields.media]
+name = "List Reference"
+type = "file_reference"
+
+[metaobjects.app.instagram_post.fields.post]
+name = "Post"
+type = "json"
+
+
+
+[metaobjects.app.instagram_list]
+name = "Instagram List"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+capabilities.publishable = true
+
+[metaobjects.app.instagram_list.fields.post_reference]
+name = "Post Reference"
+type = "metaobject_reference<$app:instagram_post>"

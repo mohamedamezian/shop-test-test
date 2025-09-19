@@ -8,8 +8,10 @@ export const loader: LoaderFunction = async () => {
   const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(
     redirectUri
   )}&scope=${scope}&response_type=code`;
-
-  return redirect(authUrl);
+  console.log("Instagram OAuth URL:", authUrl);
+  console.log("Client ID:", clientId);
+  console.log("Redirect URI:", redirectUri);
+  return console.log(authUrl);
 };
 
 export default function InstagramIndex() {

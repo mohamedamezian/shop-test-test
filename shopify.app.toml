@@ -2,7 +2,7 @@
 
 client_id = "02fee5ebd0c35e7e65f2bdb8944e1ffa"
 name = "IG-DevTools"
-application_url = "https://shop-test-test-git-development-reachdigital.vercel.app/"
+application_url = "https://shop-test-test.vercel.app/"
 embedded = true
 
 [build]
@@ -24,7 +24,7 @@ api_version = "2025-10"
 scopes = "write_metaobject_definitions,write_products"
 
 [auth]
-redirect_urls = [ "https://shop-test-test-git-development-reachdigital.vercel.app/auth/callback" ]
+redirect_urls = [ "https://shop-test-test.vercel.app/instagram/callback" ]
 
 [metaobjects.app.instagram_post]
 name = "Instagram Post"

@@ -1,3 +1,4 @@
+
 import { LoaderFunction, redirect } from "@remix-run/node";
 
 export const loader: LoaderFunction = async () => {
@@ -14,6 +15,6 @@ export const loader: LoaderFunction = async () => {
   return redirect(authUrl);
 };
 
-export default function InstagramIndex() {
-  return <div>Instagram Page</div>;
+export default function FacebookRedirect() {
+  return <div>Redirecting to Facebook...</div>;
 }

@@ -4,9 +4,9 @@ import { LoaderFunction, redirect } from "@remix-run/node";
 export const loader: LoaderFunction = async () => {
   const appId = process.env.FACEBOOK_APP_ID!;
   const redirectUri = process.env.FACEBOOK_REDIRECT_URI!;
-  const scope = "pages_show_list, instagram_basic";
+  const scope = "public_profile, instagram_basic";
 
-  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
+  const authUrl = `https://www.facebook.com/v23.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
     redirectUri
   )}&scope=${scope}&response_type=code`;
   console.log("Facebook OAuth URL:", authUrl);

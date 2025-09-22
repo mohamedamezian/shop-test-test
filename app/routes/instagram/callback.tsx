@@ -13,7 +13,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const redirectUri = process.env.FACEBOOK_REDIRECT_URI!;
 
   // Exchange code for access token
-  const tokenUrl = `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
+  const tokenUrl = `https://graph.facebook.com/v23.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`;
   
   let tokenResponse;
   try {

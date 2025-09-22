@@ -14,7 +14,3 @@ export const loader: LoaderFunction = async () => {
   console.log("Redirect URI:", redirectUri);
   return redirect(authUrl);
 };
-
-export default function FacebookRedirect() {
-  return <div>Redirecting to Facebook...</div>;
-}

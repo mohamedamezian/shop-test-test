@@ -1,4 +1,3 @@
-
 import { LoaderFunction } from "@remix-run/node";
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -30,7 +29,3 @@ export const loader: LoaderFunction = async ({ request }) => {
     return new Response(`Error fetching access token: ${err}`, { status: 500 });
   }
 };
-
-export default function FacebookCallback() {
-  return <div>Facebook login callback received.</div>;
-}

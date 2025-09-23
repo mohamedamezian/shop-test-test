@@ -8,7 +8,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return new Response("Missing code from Instagram", { status: 400 });
   }
 
-  const tokenUrl = `https://api.instagram.com/oauth/access_token`;
+  const tokenUrl = `https://api.instagram.com/oauth/access_token?client_id=1565375811115462&redirect_uri=https://shop-test-test.vercel.app/instagram/callback&client_secret=f43bd7853db5f37a3b17356699ecab36&code=${code}`;
 
   // Exchange code for access token
   const res = await fetch(tokenUrl, {

@@ -1,13 +1,13 @@
 import { AppProvider } from "@shopify/polaris";
 import translations from "@shopify/polaris/locales/en.json";
-import { InstagramConnectButton } from "../components/InstagramConnectButton";
+import { FacebookConnectButton } from "../components/FacebookConnectButton";
 
 export default function Index() {
   return (
     <AppProvider i18n={translations}>
       <div style={{ padding: "2rem" }}>
         <h1>Welcome to your app 🎉</h1>
-        <InstagramConnectButton />
+        <FacebookConnectButton />
       </div>
     </AppProvider>
   );

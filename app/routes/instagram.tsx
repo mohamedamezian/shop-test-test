@@ -6,9 +6,10 @@ export const loader: LoaderFunction = async () => {
   const redirectUri = process.env.INSTAGRAM_REDIRECT_URI!;
   const scope = process.env.INSTA_SCOPES || "instagram_basic";
 
-  const authUrl = `https://www.instagram.com/v23.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
+  const authUrl = `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=${appId}&redirect_uri=${encodeURIComponent(
     redirectUri
-  )}&scope=${scope}&response_type=code`;
+  )}&response_type=code&scope=${scope}`;
+
   console.log("Facebook OAuth URL:", authUrl);
   console.log("App ID:", appId);
   console.log("Redirect URI:", redirectUri);

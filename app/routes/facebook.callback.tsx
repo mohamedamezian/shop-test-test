@@ -5,10 +5,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const code = url.searchParams.get("code");
 
   if (!code) {
-    return new Response("Missing code from Instagram", { status: 400 });
+    return new Response("Missing code from Facebook", { status: 400 });
   }
-
-  const tokenUrl = `https://graph.instagram.com/v23.0/oauth/access_token?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI!)}&client_secret=${process.env.FACEBOOK_APP_SECRET}&code=${code}`;
+  const tokenUrl = `https://graph.facebook.com/v23.0/oauth/access_token?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI!)}&client_secret=${process.env.FACEBOOK_APP_SECRET}&code=${code}`;
 
   // Exchange code for access token
   const res = await fetch(tokenUrl, {

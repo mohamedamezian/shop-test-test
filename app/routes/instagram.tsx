@@ -1,17 +1,16 @@
+
 import { LoaderFunction, redirect } from "@remix-run/node";
 
 export const loader: LoaderFunction = async () => {
-  const clientId = process.env.INSTAGRAM_CLIENT_ID!;
-  const redirectUri = process.env.INSTAGRAM_REDIRECT_URI!;
-  const scope = "user_profile,user_media";
+  const appId = process.env.FACEBOOK_APP_ID!;
+  const redirectUri = process.env.FACEBOOK_REDIRECT_URI!;
+  const scope = process.env.INSTA_SCOPES || "instagram_basic";
 
-  const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(
+  const authUrl = `https://www.facebook.com/v23.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
     redirectUri
   )}&scope=${scope}&response_type=code`;
-
+  console.log("Facebook OAuth URL:", authUrl);
+  console.log("App ID:", appId);
+  console.log("Redirect URI:", redirectUri);
   return redirect(authUrl);
 };
-
-export default function InstagramIndex() {
-  return <div>Instagram Page</div>;
-}

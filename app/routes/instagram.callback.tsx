@@ -7,10 +7,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (!code) {
     return new Response("Missing code from Instagram", { status: 400 });
   }
-<<<<<<< Updated upstream
-=======
   const tokenUrl = `https://graph.instagram.com/v23.0/oauth/access_token?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI!)}&client_secret=${process.env.FACEBOOK_APP_SECRET}&code=${code}`;
->>>>>>> Stashed changes
 
   // Exchange code for access token
   const res = await fetch("https://api.instagram.com/oauth/access_token", {

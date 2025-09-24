@@ -14,10 +14,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const res = await fetch(tokenUrl, {
     method: "POST",
     body: new URLSearchParams({
-      client_id: "1565375811115462",
-      client_secret: "f43bd7853db5f37a3b17356699ecab36",
+      client_id: process.env.INSTAGRAM_APP_ID!,
+      client_secret: process.env.INSTAGRAM_APP_SECRET!,
       grant_type: "authorization_code",
-      redirect_uri: "https://shop-test-test.vercel.app/instagram/callback",
+      redirect_uri: process.env.INSTAGRAM_REDIRECT_URI!,
       code,
     }),
   });

@@ -10,7 +10,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (!code) {
       return new Response("Missing code from Facebook", { status: 400 });
     }
-      const tokenUrl = `https://graph.facebook.com/v23.0/oauth/access_token?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI!)}&client_secret=${process.env.FACEBOOK_APP_SECRET}&code=${code}`;
+      const tokenUrl = `https://graph.facebook.com/v23.0/oauth/access_token?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI!)}&client_secret=${process.env.FACEBOOK_APP_SECRET}&code=${code}`;
       // Exchange code for access token
   const res = await fetch(tokenUrl, {
     method: "POST",
@@ -18,7 +18,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       client_id: process.env.FACEBOOK_APP_ID!,
       client_secret: process.env.FACEBOOK_APP_SECRET!,
       grant_type: "authorization_code",
-      redirect_uri: process.env.FACEBOOK_REDIRECT_URI!,
+      redirect_uri: process.env.REDIRECT_URI!,
       code,
     }),
   });
@@ -40,7 +40,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       client_id: process.env.INSTAGRAM_APP_ID!,
       client_secret: process.env.INSTAGRAM_APP_SECRET!,
       grant_type: "authorization_code",
-      redirect_uri: process.env.INSTAGRAM_REDIRECT_URI!,
+      redirect_uri: process.env.REDIRECT_URI!,
       code,
     }),
   });

@@ -1,7 +1,5 @@
 import { AppProvider } from "@shopify/polaris";
 import translations from "@shopify/polaris/locales/en.json";
-import { FacebookConnectButton } from "../components/FacebookConnectButton";
-import { InstagramConnectButton } from "../components/InstagramConnectButton";
 import { ConnectButton } from "../components/ConnectButton";
 
 export default function Index() {

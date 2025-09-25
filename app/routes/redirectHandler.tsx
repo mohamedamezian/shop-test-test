@@ -9,7 +9,7 @@ export const loader: LoaderFunction = async ({request}) => {
     const FBappId = process.env.FACEBOOK_APP_ID!;
     const FBredirectUri = process.env.FACEBOOK_REDIRECT_URI!;
     const FBscope = process.env.FACEBOOK_SCOPES!;
-    const FBauthUrl = `https://www.facebook.com/v23.0/dialog/oauth?client_id=${FBappId}&redirect_uri=${encodeURIComponent(FBredirectUri)}&scope=${FBscope}&response_type=code`;
+    const FBauthUrl = `https://www.facebook.com/v23.0/dialog/oauth?client_id=${FBappId}&redirect_uri=${encodeURIComponent(FBredirectUri)}&scope=${encodeURIComponent(FBscope)}&response_type=code`;
 
     //Instagram variables
     const IGappId = process.env.INSTAGRAM_APP_ID!;

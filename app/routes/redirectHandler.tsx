@@ -26,6 +26,6 @@ export const loader: LoaderFunction = async ({request}) => {
     &response_type=code
     &scope=${encodeURIComponent(IGscope)}`;
 
-    return type === "facebook" ? redirect(FBauthUrl) : redirect(IGauthUrl);
+    return type === "facebook" ? redirect(FBauthUrl + `&type=${type}`) : redirect(IGauthUrl + `&type=${type}`);
 
 };

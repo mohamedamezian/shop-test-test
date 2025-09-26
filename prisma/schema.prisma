@@ -24,3 +24,14 @@ model Session {
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
 }
+
+model SocialAccount {
+  id          String   @id @default(cuid())
+  shop        String   // Link to Shopify shop domain
+  provider    String   // 'facebook' | 'instagram'
+  userId      String?  // Social platform user ID
+  accessToken String
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

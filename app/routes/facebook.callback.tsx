@@ -1,4 +1,5 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
+import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
@@ -23,8 +24,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const data = await res.json();
 
-  return new Response(
-    `<pre>${JSON.stringify(data, null, 2)}</pre>`,
-    { headers: { "Content-Type": "text/html" } }
-  );
+  // Store Facebook access token in database
+  await prisma.socialAccount.create({
+    data: {
+      shop: "shop-test-test.vercel.app", // Your Vercel app domain
+      provider: "facebook",
+      accessToken: data.access_token,
+      expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
+    },
+  });
+
+  return new Response("Facebook token saved to database!", { status: 200 });
+  
 };

@@ -27,8 +27,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     // Try to save to database with error handling
     try {
-      await prisma.socialAccount.create({
-        data: {
+      await prisma.socialAccount.upsert({
+        where: {
+          shop_provider: {
+            shop: "shop-test-test.vercel.app",
+            provider: "facebook"
+          }
+        },
+        update: {
+          accessToken: data.access_token,
+          expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
+        },
+        create: {
           shop: "shop-test-test.vercel.app",
           provider: "facebook",
           accessToken: data.access_token,

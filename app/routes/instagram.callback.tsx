@@ -1,7 +1,8 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-
+import prisma from "../db.server";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
+  try{
+    const url = new URL(request.url);
   const code = url.searchParams.get("code");
 
   if (!code) {
@@ -24,8 +25,34 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const data = await res.json();
 
-  return new Response(
-    `<pre>${JSON.stringify(data, null, 2)}</pre>`,
-    { headers: { "Content-Type": "text/html" } }
-  );
+      // Try to save to database with error handling
+    try {
+      await prisma.socialAccount.create({
+        data: {
+          shop: "shop-test-test.vercel.app",
+          provider: "instagram",
+          accessToken: data.access_token,
+          expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
+        },
+      });
+      return new Response("Instagram token saved to database successfully! 🎉");
+    } catch (dbError) {
+      console.error("Database error:", dbError);
+      return new Response(
+        `Database error: ${dbError instanceof Error ? dbError.message : 'Unknown error'}\n\nInstagram data received: ${JSON.stringify(data, null, 2)}`,
+        { status: 500, headers: { "Content-Type": "text/plain" } }
+      );
+    }
+
+  }catch (error) {
+    console.error("General error:", error);
+    return new Response(
+      `Server error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      { status: 500 }
+    );
+  }
+  
+  
+
+
 };

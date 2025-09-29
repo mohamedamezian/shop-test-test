@@ -46,7 +46,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
         },
       });
-      return new Response("Instagram token saved to database successfully! 🎉");
+            return new Response(`Instagram token saved to database successfully! ${JSON.stringify(data, null, 2)}🎉`,
+      { status: 500, headers: { "Content-Type": "text/plain" } }
+    
+    );
     } catch (dbError) {
       console.error("Database error:", dbError);
       return new Response(

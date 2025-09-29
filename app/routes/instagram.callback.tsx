@@ -10,7 +10,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       return new Response("Missing code from Instagram", { status: 400 });
     }
 
-    const tokenUrl = `https://api.instagram.com/oauth/access_token`;
+    const tokenUrl = `https://graph.instagram.com/oauth/access_token`;
 
     // Exchange code for access token
     const res = await fetch(tokenUrl, {

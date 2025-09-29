@@ -66,18 +66,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
                         expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
                     },
                 });
+                console.log("✅ Database updated successfully");
             } else {
-                console.error(`Failed to refresh token for ${token.shop}: ${JSON.stringify(data)}`);
+                console.error(`❌ Failed to refresh token for ${token.shop}: ${JSON.stringify(data)}`);
             }
         }
         
-
-        return new Response("Cron job completed", {status: 200},
-        );
+        console.log("🎉 Cron job completed successfully");
+        return new Response("Cron job completed", {status: 200});
 
     }
     catch(error){
-        console.error("Error in cron job:", error);
+        console.error("❌ Error in cron job:", error);
         return new Response(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, {status: 500});
     }
 }

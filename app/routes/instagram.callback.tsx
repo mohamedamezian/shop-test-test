@@ -10,7 +10,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       return new Response("Missing code from Instagram", { status: 400 });
     }
 
-    const tokenUrl = `https://graph.instagram.com/oauth/access_token`;
+    const tokenUrl = `https://api.instagram.com/oauth/access_token`;
 
     // Exchange code for access token
     const res = await fetch(tokenUrl, {
@@ -26,6 +26,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     const data = await res.json();
 
+    // Check if we got a short-lived token successfully
+    if (!data.access_token) {
+      return new Response(
+        `Failed to get Instagram token: ${JSON.stringify(data, null, 2)}`,
+        { status: 400, headers: { "Content-Type": "text/plain" } }
+      );
+    }
+
+    // Exchange short-lived token for long-lived token (60 days)
+    const longLivedTokenUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_APP_SECRET}&access_token=${data.access_token}`;
+    
+    const longLivedRes = await fetch(longLivedTokenUrl, { method: "GET" });
+    const longLivedData = await longLivedRes.json();
+
+    // Use the long-lived token if successful, otherwise fall back to short-lived
+    const finalToken = longLivedData.access_token || data.access_token;
+    const tokenType = longLivedData.access_token ? "long-lived" : "short-lived";
+    const expiresAt = longLivedData.expires_in 
+      ? new Date(Date.now() + longLivedData.expires_in * 1000)
+      : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // 60 days default
+
     // Update existing or create new Instagram token
     try {
       await prisma.socialAccount.upsert({
@@ -36,20 +57,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           }
         },
         update: {
-          accessToken: data.access_token,
-          expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
+          accessToken: finalToken,
+          userId: data.user_id?.toString(),
+          expiresAt: expiresAt,
         },
         create: {
           shop: "shop-test-test.vercel.app",
           provider: "instagram",
-          accessToken: data.access_token,
-          expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
+          accessToken: finalToken,
+          userId: data.user_id?.toString(),
+          expiresAt: expiresAt,
         },
       });
-            return new Response(`Instagram token saved to database successfully! ${JSON.stringify(data, null, 2)}🎉`,
-      { status: 500, headers: { "Content-Type": "text/plain" } }
-    
-    );
+      
+      return new Response(
+        `Instagram ${tokenType} token saved successfully! 🎉\n\n` +
+        `Token type: ${tokenType}\n` +
+        `Expires: ${expiresAt.toISOString()}\n` +
+        `User ID: ${data.user_id}\n\n` +
+        `Original response: ${JSON.stringify(data, null, 2)}\n\n` +
+        `Long-lived response: ${JSON.stringify(longLivedData, null, 2)}`,
+        { status: 200, headers: { "Content-Type": "text/plain" } }
+      );
     } catch (dbError) {
       console.error("Database error:", dbError);
       return new Response(

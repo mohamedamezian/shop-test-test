@@ -10,10 +10,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         
         console.log("📅 Looking for tokens older than:", twentyFourHoursAgo);
 
+        // First, let's see ALL Instagram tokens
+        const allIgTokens = await prisma.socialAccount.findMany({
+            where: { provider: "instagram" }
+        });
+        
+        console.log("🔍 ALL Instagram tokens:", allIgTokens.map(t => ({
+            id: t.id,
+            shop: t.shop,
+            createdAt: t.createdAt,
+            ageInHours: Math.round((Date.now() - t.createdAt.getTime()) / (1000 * 60 * 60))
+        })));
+
         const currentIgToken = await prisma.socialAccount.findMany({
             where:{
                 provider: "instagram",
-                shop: "shop-test-test.vercel.app",
                 createdAt: {
                     lt: twentyFourHoursAgo
                 }

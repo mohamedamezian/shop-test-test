@@ -2,7 +2,7 @@
 
 client_id = "02fee5ebd0c35e7e65f2bdb8944e1ffa"
 name = "IG-DevTools"
-application_url = "https://shop-test-test.vercel.app/"
+application_url = "https://shop-test-test-git-development-reachdigital.vercel.app/"
 embedded = true
 
 [build]

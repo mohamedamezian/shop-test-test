@@ -1,10 +1,11 @@
 
-import { LoaderFunction, redirect } from "@remix-run/node";
+import { LoaderFunction } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
+
 export const loader: LoaderFunction = async ({ request }) => {
-  const { session } = await authenticate.admin(request);  
+  const { session, redirect } = await authenticate.admin(request);
   const appId = process.env.INSTAGRAM_APP_ID!;
   const redirectUri = process.env.INSTAGRAM_REDIRECT_URI!;
   const scope = process.env.INSTA_SCOPES!;
@@ -29,6 +30,6 @@ export const loader: LoaderFunction = async ({ request }) => {
   console.log("Instagram OAuth URL:", authUrl);
   console.log("App ID:", appId);
   console.log("Redirect URI:", redirectUri);      
-  return redirect(authUrl);
+  return redirect(authUrl, { target: "_parent" });
   
 };

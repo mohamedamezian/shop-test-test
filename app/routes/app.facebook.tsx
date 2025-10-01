@@ -1,9 +1,9 @@
 
-import { LoaderFunction, redirect } from "@remix-run/node";
+import { LoaderFunction } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 
 export const loader: LoaderFunction = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { session, redirect } = await authenticate.admin(request);
   const appId = process.env.FACEBOOK_APP_ID!;
   const redirectUri = process.env.FACEBOOK_REDIRECT_URI!;
   const scope = process.env.FACEBOOK_SCOPES!;
@@ -15,5 +15,5 @@ export const loader: LoaderFunction = async ({ request }) => {
   console.log("Facebook OAuth URL:", authUrl);
   console.log("App ID:", appId);
   console.log("Redirect URI:", redirectUri);
-  return redirect(authUrl);
+  return redirect(authUrl, { target: "_parent" });
 };

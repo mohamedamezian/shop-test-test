@@ -7,7 +7,7 @@ export function FacebookConnectButton() {
     return (
         <Button
             onClick={() => {
-                navigate("/facebook");
+                navigate("app/facebook");
             }}
         >
             Connect Facebook

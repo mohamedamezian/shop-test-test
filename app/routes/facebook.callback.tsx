@@ -1,10 +1,13 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
+import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
   try {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
 
     if (!code) {
       return new Response("Missing code from Facebook", { status: 400 });
@@ -27,28 +30,33 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     // Try to save to database with error handling
     try {
+      const expiresAt = data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null;
+      
       await prisma.socialAccount.upsert({
         where: {
           shop_provider: {
-            shop: "shop-test-test.vercel.app",
+            shop: session.shop,
             provider: "facebook"
           }
         },
         update: {
           accessToken: data.access_token,
-          expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
+          expiresAt: expiresAt,
         },
         create: {
-          shop: "shop-test-test.vercel.app",
+          shop: session.shop,
           provider: "facebook",
           accessToken: data.access_token,
-          expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
+          expiresAt: expiresAt,
         },
       });
-      return new Response(`Facebook token saved to database successfully! 🎉${JSON.stringify(data, null, 2)}`,
-        { status: 500, headers: { "Content-Type": "text/plain" } }
-        
-
+      
+      return new Response(
+        `✅ Facebook token saved successfully! 🎉\n\n` +
+        `Shop: ${session.shop}\n` +
+        `Expires: ${expiresAt?.toISOString() || 'Never'}\n\n` +
+        `Facebook data: ${JSON.stringify(data, null, 2)}`,
+        { status: 200, headers: { "Content-Type": "text/plain" } }
       );
     } catch (dbError) {
       console.error("Database error:", dbError);

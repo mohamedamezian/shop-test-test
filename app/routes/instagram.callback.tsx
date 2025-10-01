@@ -1,7 +1,9 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
+import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
   try {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
@@ -52,7 +54,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       await prisma.socialAccount.upsert({
         where: {
           shop_provider: {
-            shop: "shop-test-test.vercel.app",
+            shop: session.shop,
             provider: "instagram"
           }
         },
@@ -62,7 +64,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           expiresAt: expiresAt,
         },
         create: {
-          shop: "shop-test-test.vercel.app",
+          shop: session.shop,
           provider: "instagram",
           accessToken: finalToken,
           userId: data.user_id?.toString(),

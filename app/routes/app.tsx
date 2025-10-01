@@ -25,7 +25,9 @@ export default function App() {
           Home
         </Link>
         <Link to="/app/additional">Additional page</Link>
+        <Link to="/app/social-status">Social Status</Link>
         <Link to="/app/auth-test">Authentication Test</Link>
+        <Link to="/app/debug">Debug</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>

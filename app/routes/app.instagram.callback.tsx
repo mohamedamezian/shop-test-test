@@ -82,45 +82,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         },
       });
       
-      // Create HTML success page that redirects back to Shopify
-      const shopSlug = shop.replace('.myshopify.com', '');
-      const successHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Instagram Connected</title>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-            .success { color: green; font-size: 24px; margin-bottom: 20px; }
-            .details { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            .redirect-info { color: #666; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="success">✅ Instagram Connected Successfully!</div>
-          <div class="details">
-            <strong>Shop:</strong> ${shop}<br>
-            <strong>Token type:</strong> ${tokenType}<br>
-            <strong>Expires:</strong> ${expiresAt.toLocaleDateString()}<br>
-            <strong>User ID:</strong> ${data.user_id}
-          </div>
-          <div class="redirect-info">
-            Redirecting back to your Shopify app in 3 seconds...
-          </div>
-          <script>
-            setTimeout(() => {
-              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/ig-devtools/app/social-status';
-            }, 3000);
-          </script>
-        </body>
-        </html>
-      `;
-      
-      return new Response(successHtml, {
-        status: 200,
-        headers: { "Content-Type": "text/html" }
-      });
+      return new Response(
+        `Instagram ${tokenType} token saved successfully! 🎉\n\n` +
+        `Shop: ${shop}\n` +
+        `Token type: ${tokenType}\n` +
+        `Expires: ${expiresAt.toISOString()}\n` +
+        `User ID: ${data.user_id}\n\n` +
+        `Original response: ${JSON.stringify(data, null, 2)}\n\n` +
+        `Long-lived response: ${JSON.stringify(longLivedData, null, 2)}`,
+        { status: 200, headers: { "Content-Type": "text/plain" } }
+      );
     } catch (dbError) {
       console.error("Database error:", dbError);
       return new Response(

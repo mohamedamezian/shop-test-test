@@ -5,23 +5,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
-    const state = url.searchParams.get("state");
 
     if (!code) {
       return new Response("Missing code from Facebook", { status: 400 });
     }
-
-    // Extract shop from state parameter
-    let shop = "unknown-shop";
-    if (state) {
-      try {
-        const stateData = JSON.parse(decodeURIComponent(state));
-        shop = stateData.shop || "unknown-shop";
-      } catch (error) {
-        console.error("Failed to parse state parameter:", error);
-      }
-    }
-
     const tokenUrl = `https://graph.facebook.com/v23.0/oauth/access_token?client_id=${process.env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI!)}&client_secret=${process.env.FACEBOOK_APP_SECRET}&code=${code}`;
 
     // Exchange code for access token
@@ -43,7 +30,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       await prisma.socialAccount.upsert({
         where: {
           shop_provider: {
-            shop: shop,
+            shop: "shop-test-test.vercel.app",
             provider: "facebook"
           }
         },
@@ -52,50 +39,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
         },
         create: {
-          shop: shop,
+          shop: "shop-test-test.vercel.app",
           provider: "facebook",
           accessToken: data.access_token,
           expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : null,
         },
       });
-      
-      // Create HTML success page that redirects back to Shopify
-      const shopSlug = shop.replace('.myshopify.com', '');
-      const successHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Facebook Connected</title>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-            .success { color: green; font-size: 24px; margin-bottom: 20px; }
-            .details { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            .redirect-info { color: #666; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="success">✅ Facebook Connected Successfully!</div>
-          <div class="details">
-            <strong>Shop:</strong> ${shop}<br>
-            <strong>Token saved for Facebook integration</strong>
-          </div>
-          <div class="redirect-info">
-            Redirecting back to your Shopify app in 3 seconds...
-          </div>
-          <script>
-            setTimeout(() => {
-              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/ig-devtools/app/social-status';
-            }, 3000);
-          </script>
-        </body>
-        </html>
-      `;
-      
-      return new Response(successHtml, {
-        status: 200,
-        headers: { "Content-Type": "text/html" }
-      });
+      return new Response(`Facebook token saved to database successfully! 🎉${JSON.stringify(data, null, 2)}`,
+        { status: 500, headers: { "Content-Type": "text/plain" } }
+        
+
+      );
     } catch (dbError) {
       console.error("Database error:", dbError);
       return new Response(

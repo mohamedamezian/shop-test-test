@@ -1,14 +1,16 @@
-import { Button
- } from "@shopify/polaris";
+import { Button } from "@shopify/polaris";
+import { useNavigate } from "@remix-run/react";
 
- export function FacebookConnectButton(){
+export function FacebookConnectButton() {
+    const navigate = useNavigate();
 
-    return(
+    return (
         <Button
-        onClick={() => {
-            window.open("/facebook")
-        }}>Connect Facebook</Button>
-    )
-
-
- }
+            onClick={() => {
+                navigate("/facebook");
+            }}
+        >
+            Connect Facebook
+        </Button>
+    );
+}

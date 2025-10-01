@@ -1,14 +1,16 @@
-import { Button
- } from "@shopify/polaris";
+import { Button } from "@shopify/polaris";
+import { useNavigate } from "@remix-run/react";
 
- export function InstagramConnectButton(){
+export function InstagramConnectButton() {
+    const navigate = useNavigate();
 
-    return(
+    return (
         <Button
-        onClick={() => {
-            window.open("/instagram")
-        }}>Connect Instagram</Button>
-    )
-
-
- }
+            onClick={() => {
+                navigate("/instagram");
+            }}
+        >
+            Connect Instagram
+        </Button>
+    );
+}

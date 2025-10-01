@@ -7,7 +7,7 @@ export function InstagramConnectButton() {
     return (
         <Button
             onClick={() => {
-                navigate("app/instagram");
+                navigate("/instagram");
             }}
         >
             Connect Instagram

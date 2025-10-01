@@ -24,7 +24,12 @@ api_version = "2025-10"
 scopes = "write_metaobject_definitions,write_products"
 
 [auth]
-redirect_urls = [ "https://shop-test-test.vercel.app/instagram/callback" ]
+redirect_urls = [ 
+  "https://shop-test-test-git-development-reachdigital.vercel.app/auth/shopify/callback",
+  "https://shop-test-test-git-development-reachdigital.vercel.app/auth/callback",
+  "https://shop-test-test-git-development-reachdigital.vercel.app/instagram/callback",
+  "https://shop-test-test-git-development-reachdigital.vercel.app/facebook/callback"
+]
 
 [metaobjects.app.instagram_post]
 name = "Instagram Post"

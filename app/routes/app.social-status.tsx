@@ -1,5 +1,4 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { Card, Page, Layout, Text, List, Banner, Button } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
@@ -19,7 +18,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     });
 
-    return json({
+    return Response.json({
       success: true,
       shop: session.shop,
       socialAccounts,
@@ -27,7 +26,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   } catch (error) {
     console.error("Social status error:", error);
-    return json({
+    return Response.json({
       success: false,
       shop: null,
       socialAccounts: [],
@@ -65,7 +64,7 @@ export default function SocialStatus() {
         <Layout.Section>
           {data.success ? (
             <Banner tone="success">
-              <p>✅ Connected to shop: <strong>{data.shop}</strong></p>
+              <p>Connected to shop: <strong>{data.shop}</strong></p>
             </Banner>
           ) : (
             <Banner tone="critical">
@@ -98,7 +97,7 @@ export default function SocialStatus() {
                   </div>
                 ) : (
                   <div style={{ marginTop: "1rem" }}>
-                    {data.socialAccounts.filter(account => account !== null).map((account) => (
+                    {data.socialAccounts.map((account : any) => (
                       <div key={account!.id} style={{ marginBottom: "1rem" }}>
                         <Card>
                           <div style={{ padding: "1rem" }}>
@@ -147,21 +146,6 @@ export default function SocialStatus() {
             </Card>
           </Layout.Section>
         )}
-
-        <Layout.Section>
-          <Card>
-            <div style={{ padding: "1rem" }}>
-              <Text variant="headingMd" as="h3">
-                Integration Status
-              </Text>
-              <Text variant="bodyMd" as="p" tone="subdued">
-                This page shows social media accounts connected to your Shopify store. 
-                Tokens are now properly associated with your shop domain instead of being hardcoded.
-                Each social platform token will automatically refresh when needed.
-              </Text>
-            </div>
-          </Card>
-        </Layout.Section>
       </Layout>
     </Page>
   );

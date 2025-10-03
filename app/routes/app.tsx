@@ -20,12 +20,13 @@ export default function App() {
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
-      <NavMenu>
+            <NavMenu>
         <Link to="/app" rel="home">
           Home
         </Link>
-        <Link to="/app/additional">Additional page</Link>
         <Link to="/app/social-status">Social Status</Link>
+        <Link to="/app/instagram-test">Instagram Test</Link>
+        <Link to="/app/instagram-tester">Instagram Tester</Link>
         <Link to="/app/auth-test">Authentication Test</Link>
         <Link to="/app/debug">Debug</Link>
       </NavMenu>

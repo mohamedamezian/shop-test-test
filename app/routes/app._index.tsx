@@ -17,9 +17,10 @@ export default function Index() {
 
   return (
     <AppProvider i18n={translations}>
+      
       <div style={{ padding: "2rem" }}>
         <h1>Welcome to your app 🎉</h1>
-        <FacebookConnectButton />
+        <FacebookConnectButton shop={shop} />
         <InstagramConnectButton shop={shop} />
       </div>
     </AppProvider>

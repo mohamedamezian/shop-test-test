@@ -59,7 +59,7 @@ export default function AuthTest() {
         <Layout.Section>
           {data.success ? (
             <Banner tone="success">
-              <p>✅ Authentication successful!</p>
+              <p>Authentication successful!</p>
             </Banner>
           ) : (
             <Banner tone="critical">

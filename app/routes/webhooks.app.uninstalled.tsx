@@ -13,5 +13,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await db.session.deleteMany({ where: { shop } });
   }
 
+  // Clean up social media data for compliance
+  try {
+    await db.socialAccount.deleteMany({ where: { shop } });
+    console.log(`Cleaned up social accounts for shop: ${shop}`);
+  } catch (error) {
+    console.error(`Failed to clean up social accounts for ${shop}:`, error);
+  }
+
   return new Response();
 };

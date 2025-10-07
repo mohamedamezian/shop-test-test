@@ -1,8 +1,18 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
-import { Card, Page, Layout, Text, List, Banner, Button } from "@shopify/polaris";
+import { useLoaderData, useNavigate } from "@remix-run/react";
+import { Page, Layout, Card, Text, List, Banner, Button } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
+import { InstagramConnectButton } from "./components/InstagramConnectButton";
+import { FacebookConnectButton } from "./components/FacebookConnectButton";
+import { useAppBridge } from "@shopify/app-bridge-react";
+import { Redirect } from "@shopify/app-bridge/actions";
+import { getSessionToken } from "@shopify/app-bridge-utils";
+import { createApp } from "@shopify/app-bridge";
+
+const app = useAppBridge();
+console.log("App Bridge instance:", app);
+
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
@@ -37,6 +47,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function SocialStatus() {
   const data = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
 
   const getStatusColor = (account: any) => {
     if (!account.expiresAt) return "warning";
@@ -127,25 +138,31 @@ export default function SocialStatus() {
                                 <strong>Token Status:</strong> {account!.accessToken ? "Present" : "Missing"}
                               </List.Item>
                             </List>
+                            
+                            <div style={{ marginTop: "1rem" }}>
+                              <Button
+                                onClick={() => navigate(`/app/${account!.provider}`)}
+                                size="slim"
+                              >
+                                Reconnect {account!.provider}
+                              </Button>
+                            </div>
                           </div>
                         </Card>
                       </div>
                     ))}
                     
                     <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem" }}>
-                      <Button onClick={() => window.open("/app/facebook", "_parent")}>
-                        Reconnect Facebook
-                      </Button>
-                      <Button onClick={() => window.open("/app/instagram", "_parent")}>
-                        Reconnect Instagram  
-                      </Button>
-                    </div>
+                      <InstagramConnectButton shop={data.shop} />
+                      <FacebookConnectButton shop={data.shop} />
+                     </div>
                   </div>
                 )}
               </div>
             </Card>
           </Layout.Section>
         )}
+
       </Layout>
     </Page>
   );

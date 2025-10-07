@@ -1,5 +1,4 @@
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
@@ -18,11 +17,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
     if (!facebookAccount || !facebookAccount.accessToken) {
-      return json({
+      return {
         success: false,
         error: "No Facebook account connected",
         posts: []
-      });
+      };
     }
 
     // Fetch Facebook posts using server-side fetch (appropriate for external APIs)
@@ -33,27 +32,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const facebookData = await facebookResponse.json();
 
     if (!facebookResponse.ok) {
-      return json({
+      return {
         success: false,
         error: `Facebook API error: ${facebookData.error?.message || 'Unknown error'}`,
         posts: []
-      });
+      };
     }
 
-    return json({
+    return {
       success: true,
       posts: facebookData.data || [],
       user: facebookAccount.userId,
       tokenExpires: facebookAccount.expiresAt
-    });
+    };
 
   } catch (error) {
     console.error("Facebook API error:", error);
-    return json({
+    return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
       posts: []
-    });
+    };
   }
 };
 
@@ -67,13 +66,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   switch (operation) {
     case "refresh_token":
       // Handle token refresh
-      return json({ success: true, message: "Token refresh not implemented yet" });
+      return { success: true, message: "Token refresh not implemented yet" };
     
     case "sync_posts":
       // Handle syncing posts to Shopify metafields
-      return json({ success: true, message: "Sync not implemented yet" });
+      return { success: true, message: "Sync not implemented yet" };
     
     default:
-      return json({ success: false, error: "Unknown operation" });
+      return { success: false, error: "Unknown operation" };
   }
 };

@@ -1,4 +1,4 @@
-import { Card, Text, List } from "@shopify/polaris";
+import { Card, Text } from "@shopify/polaris";
 
 interface InstagramPost {
   id: string;

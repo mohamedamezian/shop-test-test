@@ -1,5 +1,4 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
@@ -16,11 +15,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 
   if (!account?.accessToken) {
-    return json({ error: "No Instagram connected", posts: [] });
+    return { error: "No Instagram connected", posts: [] };
   }
 
   const response = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${account.accessToken}`);
   const data = await response.json();
 
-  return json({ posts: data.data || [] });
+  return { posts: data.data || [] };
 };

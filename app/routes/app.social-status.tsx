@@ -5,14 +5,6 @@ import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { InstagramConnectButton } from "./components/InstagramConnectButton";
 import { FacebookConnectButton } from "./components/FacebookConnectButton";
-import { useAppBridge } from "@shopify/app-bridge-react";
-import { Redirect } from "@shopify/app-bridge/actions";
-import { getSessionToken } from "@shopify/app-bridge-utils";
-import { createApp } from "@shopify/app-bridge";
-
-const app = useAppBridge();
-console.log("App Bridge instance:", app);
-
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
@@ -28,20 +20,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     });
 
-    return Response.json({
+    return {
       success: true,
       shop: session.shop,
       socialAccounts,
       error: null,
-    });
+    };
   } catch (error) {
     console.error("Social status error:", error);
-    return Response.json({
+    return {
       success: false,
       shop: null,
       socialAccounts: [],
       error: error instanceof Error ? error.message : "Unknown error",
-    });
+    };
   }
 };
 
@@ -151,11 +143,12 @@ export default function SocialStatus() {
                         </Card>
                       </div>
                     ))}
-                    
-                    <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem" }}>
-                      <InstagramConnectButton shop={data.shop} />
-                      <FacebookConnectButton shop={data.shop} />
-                     </div>
+                    {data.shop && (
+                      <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem" }}>
+                        <InstagramConnectButton shop={data.shop} />
+                        <FacebookConnectButton shop={data.shop} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

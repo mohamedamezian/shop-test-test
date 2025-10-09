@@ -1,5 +1,4 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { Card, Page, Layout, Text, Banner, List } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
@@ -27,7 +26,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const response = await admin.graphql(shopQuery);
     const shopData = await response.json();
 
-    return json({
+    return{
       success: true,
       session: {
         id: session.id,
@@ -38,15 +37,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
       shopInfo: shopData.data?.shop || null,
       error: null,
-    });
+    };
   } catch (error) {
     console.error("Authentication test error:", error);
-    return json({
+    return{
       success: false,
       session: null,
       shopInfo: null,
       error: error instanceof Error ? error.message : "Unknown error",
-    });
+    };
   }
 };
 

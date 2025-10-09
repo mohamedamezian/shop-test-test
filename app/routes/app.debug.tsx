@@ -1,5 +1,4 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { Card, Page, Layout, Text, Banner } from "@shopify/polaris";
 import prisma from "../db.server";
@@ -19,20 +18,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID ? "Present" : "Missing",
     };
 
-    return json({
+    return {
       success: true,
       allAccounts,
       envVars,
       error: null,
-    });
+    };
   } catch (error) {
     console.error("Debug error:", error);
-    return json({
+    return {
       success: false,
       allAccounts: [],
       envVars: {},
       error: error instanceof Error ? error.message : "Unknown error",
-    });
+    };
   }
 };
 

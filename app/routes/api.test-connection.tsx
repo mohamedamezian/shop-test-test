@@ -18,7 +18,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   });
 
   if (!account?.accessToken) {
-    return json({ error: `No ${provider} connected` });
+    return { error: `No ${provider} connected` };
   }
 
   const testUrl = provider === "instagram" 
@@ -28,8 +28,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const response = await fetch(testUrl);
   const data = await response.json();
 
-  return json({ 
+  return { 
     success: !data.error,
     message: data.error ? data.error.message : `${provider} working`
-  });
+  };
 };

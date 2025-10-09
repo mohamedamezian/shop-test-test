@@ -1,5 +1,4 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
@@ -11,7 +10,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const operation = formData.get("operation") as string;
 
     if (!provider || !["instagram", "facebook"].includes(provider)) {
-      return json({ success: false, error: "Invalid provider" });
+      return { success: false, error: "Invalid provider" };
     }
 
     const account = await prisma.socialAccount.findUnique({
@@ -24,7 +23,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     if (!account) {
-      return json({ success: false, error: `No ${provider} account connected` });
+      return { success: false, error: `No ${provider} account connected` };
     }
 
     switch (operation) {
@@ -48,34 +47,34 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             }
           });
 
-          return json({ 
+          return { 
             success: true, 
             message: "Instagram token refreshed successfully",
             expiresAt: new Date(Date.now() + refreshData.expires_in * 1000)
-          });
+          };
         } else {
-          return json({ 
+          return { 
             success: false, 
             error: `Token refresh failed: ${refreshData.error?.message || 'Unknown error'}` 
-          });
+          };
         }
 
       case "sync_to_metafields":
         // This would implement syncing social posts to Shopify metafields
-        return json({ 
+        return { 
           success: true, 
           message: "Metafield sync not implemented yet" 
-        });
+        };
 
       default:
-        return json({ success: false, error: "Unknown operation" });
+        return { success: false, error: "Unknown operation" };
     }
 
   } catch (error) {
     console.error("Token management error:", error);
-    return json({ 
+    return { 
       success: false, 
       error: error instanceof Error ? error.message : "Unknown error" 
-    });
+    };
   }
 };

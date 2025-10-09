@@ -1,5 +1,4 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { Card, Page, Layout, Text, Banner } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
@@ -20,11 +19,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
     if (!instagramAccount || !instagramAccount.accessToken) {
-      return json({
+      return {
         success: false,
         error: "No Instagram account connected",
         posts: []
-      });
+      };
     }
 
     // Test Instagram API call - get user's media
@@ -35,28 +34,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const instagramData = await instagramResponse.json();
 
     if (!instagramResponse.ok) {
-      return json({
+      return{
         success: false,
         error: `Instagram API error: ${instagramData.error?.message || 'Unknown error'}`,
         posts: []
-      });
+      };
     }
 
-    return json({
+    return {
       success: true,
       error: null,
       posts: instagramData.data || [],
       user: instagramAccount.userId,
       tokenExpires: instagramAccount.expiresAt
-    });
+    };
 
   } catch (error) {
     console.error("Instagram test error:", error);
-    return json({
+    return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
       posts: []
-    });
+    };
   }
 };
 

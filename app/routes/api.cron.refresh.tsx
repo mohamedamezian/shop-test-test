@@ -13,7 +13,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         const currentIgToken = await prisma.socialAccount.findMany({
             where:{
                 provider: "instagram",
-                shop: "shop-test-test.vercel.app",
                 createdAt: {
                     lt: twentyFourHoursAgo
                 }

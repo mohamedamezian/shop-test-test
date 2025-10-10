@@ -21,7 +21,7 @@ api_version = "2025-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_metaobject_definitions,write_products, write_files, write_themes"
+scopes = "write_metaobject_definitions,write_metaobjects,write_products, write_files, write_themes, read_metaobjects"
 
 [auth]
 redirect_urls = [ "https://shop-test-test.vercel.app/instagram/callback" ]
@@ -36,7 +36,7 @@ name = "Instagram Post"
   [metaobjects.app.instagram_post.capabilities]
   publishable = true
 
-[metaobjects.app.instagram_post.fields.media]
+[metaobjects.app.instagram_post.fields.list_reference]
 name = "List Reference"
 type = "file_reference"
 
@@ -54,6 +54,10 @@ name = "Instagram List"
   [metaobjects.app.instagram_list.capabilities]
   publishable = true
 
-[metaobjects.app.instagram_list.fields.post_reference]
-name = "Post Reference"
-type = "metaobject_reference<$app:instagram_post>"
+[metaobjects.app.instagram_list.fields.data]
+name = "Data"
+type = "json"
+
+[metaobjects.app.instagram_list.fields.post_references]
+name = "Post References"
+type = "list.metaobject_reference<$app:instagram_post>"

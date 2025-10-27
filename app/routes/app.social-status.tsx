@@ -4,7 +4,7 @@ import { Page, Layout, Card, Text, List, Banner, Button } from "@shopify/polaris
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { InstagramConnectButton } from "./components/InstagramConnectButton";
-import { FacebookConnectButton } from "./components/FacebookConnectButton";
+
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
@@ -90,9 +90,6 @@ export default function SocialStatus() {
                       No social accounts connected yet.
                     </Text>
                     <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", justifyContent: "center" }}>
-                      <Button onClick={() => window.open("/app/facebook", "_parent")}>
-                        Connect Facebook
-                      </Button>
                       <Button onClick={() => window.open("/app/instagram", "_parent")}>
                         Connect Instagram
                       </Button>
@@ -146,7 +143,7 @@ export default function SocialStatus() {
                     {data.shop && (
                       <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem" }}>
                         <InstagramConnectButton shop={data.shop} />
-                        <FacebookConnectButton shop={data.shop} />
+
                       </div>
                     )}
                   </div>

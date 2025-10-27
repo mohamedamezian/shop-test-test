@@ -20,9 +20,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return { error: `No ${provider} connected` };
   }
 
-  const testUrl = provider === "instagram" 
-    ? `https://graph.instagram.com/me?fields=id,username&access_token=${account.accessToken}`
-    : `https://graph.facebook.com/me?access_token=${account.accessToken}`;
+  const testUrl = `https://graph.instagram.com/me?fields=id,username&access_token=${account.accessToken}`;
+
 
   const response = await fetch(testUrl);
   const data = await response.json();

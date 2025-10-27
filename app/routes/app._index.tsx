@@ -3,7 +3,7 @@ import { data, json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { AppProvider } from "@shopify/polaris";
 import translations from "@shopify/polaris/locales/en.json";
-import { FacebookConnectButton } from "./components/FacebookConnectButton";
+
 import { InstagramConnectButton } from "./components/InstagramConnectButton";
 import { authenticate } from "../shopify.server";
 
@@ -20,7 +20,6 @@ export default function Index() {
       
       <div style={{ padding: "2rem" }}>
         <h1>Welcome to your app 🎉</h1>
-        <FacebookConnectButton shop={data.shop} />
         <InstagramConnectButton shop={data.shop} />
       </div>
     </AppProvider>

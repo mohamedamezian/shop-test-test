@@ -9,7 +9,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const provider = formData.get("provider") as string;
     const operation = formData.get("operation") as string;
 
-    if (!provider || !["instagram", "facebook"].includes(provider)) {
+    if (!provider || provider !== "instagram") {
       return { success: false, error: "Invalid provider" };
     }
 

@@ -1,0 +1,60 @@
+{% assign instagram_lists = shop.metaobjects['$app:instagram_list'] %}
+
+{% if instagram_lists.size > 0 %}
+  <select id="instagram-list-select">
+    {% for list in instagram_lists %}
+      <option value="{{ list.id }}">{{ list.handle }}</option>
+    {% endfor %}
+  </select>
+
+  <div id="instagram-list-content">
+    {% for list in instagram_lists %}
+      <div class="instagram-list" data-list-id="{{ list.id }}" style="display:none;">
+        <h3>{{ list.handle }}</h3>
+        {% assign post_refs = list.fields | where: "key", "post_references" | first %}
+        {% if post_refs %}
+          {% assign post_ids = post_refs.value | split: ',' %}
+          <ul>
+            {% for post_id in post_ids %}
+              <li>{{ post_id }}</li>
+              {# You can fetch and render more post data here if available #}
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    // Simple JS to show selected list
+    document.getElementById('instagram-list-select').addEventListener('change', function(e) {
+      var selectedId = e.target.value;
+      document.querySelectorAll('.instagram-list').forEach(function(el) {
+        el.style.display = el.dataset.listId === selectedId ? 'block' : 'none';
+      });
+    });
+    // Show first list by default
+    document.addEventListener('DOMContentLoaded', function() {
+      var select = document.getElementById('instagram-list-select');
+      if (select && select.value) {
+        document.querySelector('.instagram-list[data-list-id=\"' + select.value + '\"]').style.display = 'block';
+      }
+    });
+  </script>
+{% else %}
+  <p>No Instagram lists found.</p>
+{% endif %}
+{% schema %}
+{
+  "name": "Instagram Feed",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Instagram Feed"
+    }
+  ]
+}
+{% endschema %}

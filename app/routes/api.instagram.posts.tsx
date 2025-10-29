@@ -5,7 +5,7 @@ import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  
+  // Get Instagram account
   const account = await prisma.socialAccount.findUnique({
     where: {
       shop_provider: {
@@ -19,6 +19,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return { error: "No Instagram connected", posts: [] };
   }
 
+  //Fetch Instagram posts
   const response = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${account.accessToken}`);
   const data = await response.json();
 
@@ -26,6 +27,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  // Authenticate admin and get session
   const { session, admin } = await authenticate.admin(request);
   
   if (!session?.accessToken) {
@@ -98,14 +100,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           }
         }
       );
-
+    
       const stagedResult = await stagedUploadResponse.json();
-      
+
       if (stagedResult.data.stagedUploadsCreate.userErrors.length > 0) {
         errors.push(`Post ${postId}: ${stagedResult.data.stagedUploadsCreate.userErrors[0].message}`);
         continue;
       }
-
       const target = stagedResult.data.stagedUploadsCreate.stagedTargets[0];
 
       // 3️⃣ Download the Instagram image
@@ -194,6 +195,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               variables: {
                 metaobject: {
                   type: "$app:instagram_post",
+                  
                   fields: [
                     ...(fileId ? [{ 
                       key: "list_reference", 
@@ -268,6 +270,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
               metaobject {
                 id
                 handle
+                capabilities{
+                  publishable{
+                    status
+                  }
+                }
               }
               userErrors {
                 field
@@ -303,10 +310,57 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
         const listResult = await listResponse.json();
         console.log("Full list creation response:", JSON.stringify(listResult, null, 2));
-        
+
         if (listResult.data?.metaobjectCreate?.metaobject) {
           createdList = listResult.data.metaobjectCreate.metaobject;
           console.log(`✅ Auto-created Instagram list: ${createdList.id} with ${postMetaobjectIds.length} posts`);
+
+          // Immediately update status to active
+          try {
+            const updateResponse = await admin.graphql(
+              `#graphql
+              mutation metaobjectUpdate($id: ID!, $metaobject: MetaobjectUpdateInput!) {
+                metaobjectUpdate(id: $id, metaobject: $metaobject) {
+                  metaobject {
+                    id
+                    handle
+                    capabilities{
+                      publishable{
+                        status
+                      }
+                    }
+                  }
+                  userErrors {
+                    field
+                    message
+                  }
+                }
+              }`,
+              {
+                variables: {
+                  id: createdList.id,
+                  metaobject: {
+                    capabilities: {
+                      publishable: {
+                        status: "active"
+                      }
+                    }
+                  }
+                }
+              }
+            );
+            const updateResult = await updateResponse.json();
+            if (updateResult.data?.metaobjectUpdate?.metaobject?.status === "active") {
+              createdList.status = "active";
+              console.log(`✅ Set Instagram list status to active: ${createdList.id}`);
+            } else if (updateResult.data?.metaobjectUpdate?.userErrors?.length > 0) {
+              console.error("Status update failed with userErrors:", updateResult.data.metaobjectUpdate.userErrors);
+              errors.push(`Status update failed: ${JSON.stringify(updateResult.data.metaobjectUpdate.userErrors)}`);
+            }
+          } catch (updateError) {
+            console.warn("Failed to update Instagram list status:", updateError);
+          }
+
         } else if (listResult.data?.metaobjectCreate?.userErrors?.length > 0) {
           console.error("List creation failed with userErrors:", listResult.data.metaobjectCreate.userErrors);
           errors.push(`List creation failed: ${JSON.stringify(listResult.data.metaobjectCreate.userErrors)}`);

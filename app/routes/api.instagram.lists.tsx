@@ -137,6 +137,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           variables: {
             id: listId,
             metaobject: {
+              
               fields: [
                 {
                   key: "post_reference",
@@ -190,6 +191,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           variables: {
             metaobject: {
               type: "$app:instagram_list",
+              
               fields: [
                 {
                   key: "post_reference",

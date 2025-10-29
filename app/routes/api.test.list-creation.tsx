@@ -34,6 +34,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       {
         variables: {
           metaobject: {
+            
             type: "$app:instagram_list",
             fields: [
               {

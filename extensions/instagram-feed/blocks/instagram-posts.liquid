@@ -1,0 +1,144 @@
+{% comment %} Instagram Posts Display Block {% endcomment %}
+
+<div class="instagram-posts-section">
+  {% if block.settings.heading %}
+    <h2 class="instagram-posts-heading">{{ block.settings.heading }}</h2>
+  {% endif %}
+  
+  <div class="instagram-posts-grid">
+    {% assign all_posts = shop.metaobjects['$app:instagram_post'].values %}
+    {% assign posts_limit = block.settings.posts_limit | default: 12 %}
+    
+    {% if all_posts.size > 0 %}
+      {% for post in all_posts limit: posts_limit %}
+        <div class="instagram-post-item">
+          {% comment %} Convert data to string for parsing {% endcomment %}
+          {% assign data = post.data.value | append: '' %}
+          
+          {% comment %} Get image URL (try shopify URL first, fallback to Instagram URL) {% endcomment %}
+          {% assign image_url = data | split: '"media_url"=>"' | last | split: '"' | first %}
+          
+          {% comment %} Get caption {% endcomment %}
+          {% assign caption = data | split: '"caption"=>"' | last | split: '"' | first | truncate: 150 %}
+          
+          {% comment %} Get Instagram link {% endcomment %}
+          {% assign link = data | split: '"permalink"=>"' | last | split: '"' | first %}
+          
+          {% comment %} Display post {% endcomment %}
+          <a href="{{ link }}" target="_blank" class="instagram-post-link">
+            <div class="instagram-post-image">
+              <img src="{{ image_url }}" alt="{{ caption }}" width="auto" height="auto" loading="lazy" />
+              <div class="instagram-post-overlay">
+                <p class="instagram-post-caption">{{ caption }}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No Instagram posts available.</p>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  .instagram-posts-section {
+    padding: 2rem 0;
+  }
+  
+  .instagram-posts-heading {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+  }
+  
+  .instagram-posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+  
+  .instagram-post-item {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+  }
+  
+  .instagram-post-item:hover {
+    transform: translateY(-4px);
+  }
+  
+  .instagram-post-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+  
+  .instagram-post-image {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .instagram-post-image img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+  
+  .instagram-post-link:hover .instagram-post-image img {
+    transform: scale(1.05);
+  }
+  
+  .instagram-post-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 1.5rem;
+  }
+  
+  .instagram-post-link:hover .instagram-post-overlay {
+    opacity: 1;
+  }
+  
+  .instagram-post-caption {
+    color: white;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    text-align: center;
+    margin: 0;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Instagram Posts",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Instagram Feed"
+    },
+    {
+      "type": "range",
+      "id": "posts_limit",
+      "label": "Number of Posts",
+      "min": 1,
+      "max": 24,
+      "step": 1,
+      "default": 12
+    }
+  ]
+}
+{% endschema %}

@@ -70,22 +70,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     )
 );
 
-// Metaobject entries 
-    const createMetaobjectMutation = `
-        mutation metaobjectCreate($metaobject: MetaobjectCreateInput!) {
-            metaobjectCreate(metaobject: $metaobject) {
-              metaobject {
-                id
-                handle
-                }
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }`;
-
     // Fetch posts from Instagram Graph API
     const igResponse = await fetch(`https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp,username,children{media_url,media_type}&access_token=${account.accessToken}`);
     const igData = await igResponse.json();
@@ -100,7 +84,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             continue;
         }
         // define fileId for instagram_post image field
-        let fileId: string | null = null;
+        let fileId: string
         
         // Normal post upload
         if(post.media_type !== "CAROUSEL_ALBUM"){
@@ -226,7 +210,39 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             );
             
             const metaobjectJson = await metaobjectResponse.json();
-            console.log(`✅ Created metaobject for post ${post.id}:`, metaobjectJson.data?.metaobjectCreate?.metaobject?.id);
+            const metaobjectId = metaobjectJson.data?.metaobjectCreate?.metaobject?.id;
+            
+            // Set metaobject status to active
+            if (metaobjectId) {
+                await admin.graphql(
+                    `#graphql
+                    mutation metaobjectUpdate($id: ID!, $metaobject: MetaobjectUpdateInput!) {
+                        metaobjectUpdate(id: $id, metaobject: $metaobject) {
+                            metaobject {
+                                id
+                                handle
+                            }
+                            userErrors {
+                                field
+                                message
+                            }
+                        }
+                    }`,
+                    {
+                        variables: {
+                            id: metaobjectId,
+                            metaobject: {
+                                capabilities: {
+                                    publishable: {
+                                        status: "ACTIVE"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                );
+                console.log(`✅ Created and activated metaobject for post ${post.id}: ${metaobjectId}`);
+            }
         }
 
     }

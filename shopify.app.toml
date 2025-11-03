@@ -28,36 +28,29 @@ redirect_urls = [ "https://shop-test-test.vercel.app/instagram/callback" ]
 
 [metaobjects.app.instagram_post]
 name = "Instagram Post"
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+capabilities.publishable = true
 
-  [metaobjects.app.instagram_post.access]
-  admin = "merchant_read_write"
-  storefront = "public_read"
+[metaobjects.app.instagram_post.fields.data]
+name = "Data"
+type = "json" 
 
-  [metaobjects.app.instagram_post.capabilities]
-  publishable = true
-
-[metaobjects.app.instagram_post.fields.list_reference]
-name = "List Reference"
+[metaobjects.app.instagram_post.fields.image]
+name = "Image"
 type = "file_reference"
-
-[metaobjects.app.instagram_post.fields.post]
-name = "Post"
-type = "json"
 
 [metaobjects.app.instagram_list]
 name = "Instagram List"
-
-  [metaobjects.app.instagram_list.access]
-  admin = "merchant_read_write"
-  storefront = "public_read"
-
-  [metaobjects.app.instagram_list.capabilities]
-  publishable = true
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+capabilities.publishable = true
 
 [metaobjects.app.instagram_list.fields.data]
 name = "Data"
-type = "json"
+type = "json" 
 
-[metaobjects.app.instagram_list.fields.post_references]
-name = "Post References"
+[metaobjects.app.instagram_list.fields.posts]
+name = "Posts"
 type = "list.metaobject_reference<$app:instagram_post>"
+

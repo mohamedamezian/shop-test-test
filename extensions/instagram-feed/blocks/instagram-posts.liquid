@@ -12,22 +12,15 @@
     {% if all_posts.size > 0 %}
       {% for post in all_posts limit: posts_limit %}
         <div class="instagram-post-item">
-          {% comment %} Convert data to string for parsing {% endcomment %}
+          {% comment %} Parse data as string since it's stored as JSON {% endcomment %}
           {% assign data = post.data.value | append: '' %}
-          
-          {% comment %} Get image URL (try shopify URL first, fallback to Instagram URL) {% endcomment %}
-          {% assign image_url = data | split: '"media_url"=>"' | last | split: '"' | first %}
-          
-          {% comment %} Get caption {% endcomment %}
           {% assign caption = data | split: '"caption"=>"' | last | split: '"' | first | truncate: 150 %}
-          
-          {% comment %} Get Instagram link {% endcomment %}
           {% assign link = data | split: '"permalink"=>"' | last | split: '"' | first %}
           
-          {% comment %} Display post {% endcomment %}
+          {% comment %} Display post using Shopify-hosted image {% endcomment %}
           <a href="{{ link }}" target="_blank" class="instagram-post-link">
             <div class="instagram-post-image">
-              <img src="{{ image_url }}" alt="{{ caption }}" width="auto" height="auto" loading="lazy" />
+              <img src="{{ post.image | file_url }}" alt="{{ caption }}" width="auto" height="auto" loading="lazy" />
               <div class="instagram-post-overlay">
                 <p class="instagram-post-caption">{{ caption }}</p>
               </div>

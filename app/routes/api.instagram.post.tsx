@@ -90,20 +90,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
         }`;
 
-  const metaobjectUpsert = `#graphql
-    mutation metaobjectUpsert($handle: MetaobjectHandleInput!, $metaobject: MetaobjectUpsertInput!) {
-        metaobjectUpsert(handle: $handle, metaobject: $metaobject) {
+  const metaobjectCreate = `#graphql
+    mutation metaobjectCreate($metaobject: MetaobjectCreateInput!) {
+      metaobjectCreate(metaobject: $metaobject) {
         metaobject {
-            id
-            handle
+          id
+          handle
         }
-            userErrors {
-            field
-            message
-            }
+        userErrors {
+          field
+          message
         }
-}
-    `;
+      }
+    }
+  `;
 
   const metaobjectChecker = await admin.graphql(
     `#graphql
@@ -165,13 +165,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
       // Only create metaobject if we have a file ID
       if (fileId) {
-        const metaobjectResponse = await admin.graphql(metaobjectUpsert, {
+        const metaobjectResponse = await admin.graphql(metaobjectCreate, {
           variables: {
-            handle: {
-              type: "$app:instagram_post",
-              handle: post.id,
-            },
             metaobject: {
+              type: "$app:instagram_post",
               fields: [
                 { key: "data", value: JSON.stringify(post) },
                 { key: "image", value: fileId },
@@ -181,12 +178,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         });
 
         const metaobjectJson = await metaobjectResponse.json();
-        console.log(
-          `Metaobject upsert response for post ${post.id}:`,
-          JSON.stringify(metaobjectJson, null, 2),
-        );
         const metaobjectId =
-          metaobjectJson.data?.metaobjectUpsert?.metaobject?.id;
+          metaobjectJson.data?.metaobjectCreate?.metaobject?.id;
         postObjectIds.push(metaobjectId);
         console.log(
           `Created and activated metaobject for post ${post.id}: ${metaobjectId}`,
@@ -194,19 +187,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     } else {
       // For carousels, create a separate metaobject for each child img
-      console.log(
-        `Processing carousel with ${post.children?.data?.length || 0} children`,
-      );
+
       for (const child of post.children?.data || []) {
         const childUniqueKey = `${uniqueKey}_${child.id}`;
-        console.log(`Processing carousel child: ${childUniqueKey}`);
-
-        // Check if this specific carousel child already exists
-        if (existingKeys.has(childUniqueKey)) {
-          console.log(`Carousel child already exists: ${childUniqueKey}`);
-          continue;
-        }
-
         const carouselResponse = await admin.graphql(fileCreation, {
           variables: {
             files: [
@@ -226,13 +209,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
         // Create metaobject for this carousel image
         if (childFileId) {
-          const metaobjectResponse = await admin.graphql(metaobjectUpsert, {
+          const metaobjectResponse = await admin.graphql(metaobjectCreate, {
             variables: {
-              handle: {
-                type: "$app:instagram_post",
-                handle: `${uniqueKey}_${child.id}`,
-              },
               metaobject: {
+                type: "$app:instagram_post",
                 fields: [
                   { key: "data", value: JSON.stringify(post) },
                   { key: "image", value: childFileId },
@@ -242,12 +222,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           });
 
           const metaobjectJson = await metaobjectResponse.json();
-          console.log(
-            `Metaobject upsert response for carousel child ${childUniqueKey}:`,
-            JSON.stringify(metaobjectJson, null, 2),
-          );
+
           const metaobjectId =
-            metaobjectJson.data?.metaobjectUpsert?.metaobject?.id;
+            metaobjectJson.data?.metaobjectCreate?.metaobject?.id;
           postObjectIds.push(metaobjectId);
           console.log(
             `Created and activated metaobject for carousel image ${post.id}: ${metaobjectId}`,
@@ -258,13 +235,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   if (existingMetaobjectsJson != null) {
-    const metaobjectResponse = await admin.graphql(metaobjectUpsert, {
+    const metaobjectResponse = await admin.graphql(metaobjectCreate, {
       variables: {
-        handle: {
-          type: "$app:instagram_list",
-          handle: account.userId,
-        },
         metaobject: {
+          type: "$app:instagram_list",
           fields: [
             { key: "data", value: JSON.stringify(igData) },
             { key: "posts", value: JSON.stringify(postObjectIds) },
@@ -273,7 +247,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
     });
     const metaobjectJson = await metaobjectResponse.json();
-    const listObjectId = metaobjectJson.data?.metaobjectUpsert?.metaobject?.id;
+    const listObjectId = metaobjectJson.data?.metaobjectCreate?.metaobject?.id;
     console.log(`Created Instagram list metaobject: ${listObjectId}`);
   }
 

@@ -1,0 +1,82 @@
+import { json, LoaderFunctionArgs } from "@remix-run/node";
+import { authenticate } from "../shopify.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
+
+  // Query instagram_post metaobjects
+  const postMetaobjectsQuery = await admin.graphql(`
+    #graphql
+    query {
+      metaobjects(type: "$app:instagram_post", first: 100) {
+        edges { node { id } }
+      }
+    }
+  `);
+  const postMetaobjectsJson = await postMetaobjectsQuery.json();
+  const postMetaobjectIds = postMetaobjectsJson.data.metaobjects.edges.map(
+    (e: any) => e.node.id,
+  );
+
+  // Query instagram_list metaobjects
+  const listMetaobjectsQuery = await admin.graphql(`
+    #graphql
+    query {
+      metaobjects(type: "$app:instagram_list", first: 100) {
+        edges { node { id } }
+      }
+    }
+  `);
+  const listMetaobjectsJson = await listMetaobjectsQuery.json();
+  const listMetaobjectIds = listMetaobjectsJson.data.metaobjects.edges.map(
+    (e: any) => e.node.id,
+  );
+
+  // Delete all metaobjects
+  for (const id of [...postMetaobjectIds, ...listMetaobjectIds]) {
+    await admin.graphql(
+      `
+      #graphql
+      mutation metaobjectDelete($id: ID!) {
+  metaobjectDelete(id: $id) {
+    deletedId
+    userErrors { field message }
+  }
+}
+    `,
+      { variables: { id } },
+    );
+  }
+
+  // Delete files with alt text starting with instagram_post_
+  const filesQuery = await admin.graphql(`
+    #graphql
+    query {
+      files(first: 100, query: "instagram_post_") {
+        edges { node { id } }
+      }
+    }
+  `);
+  const filesJson = await filesQuery.json();
+  const fileIds = filesJson.data.files.edges.map((e: any) => e.node.id);
+
+  if (fileIds.length > 0) {
+    await admin.graphql(
+      `
+      #graphql
+      mutation fileDelete($fileIds: [ID!]!) {
+        fileDelete(fileIds: $fileIds) {
+          deletedFileIds
+          userErrors { field message }
+        }
+      }
+    `,
+      { variables: { fileIds } },
+    );
+  }
+
+  return json({
+    deletedMetaobjects: [...postMetaobjectIds, ...listMetaobjectIds],
+    deletedFiles: fileIds,
+  });
+};

@@ -172,6 +172,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
               fields: [
                 { key: "data", value: JSON.stringify(post) },
                 { key: "image", value: fileId },
+                { key: "caption", value: post.caption || "Filler caption" },
               ],
             },
           },
@@ -216,6 +217,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
                 fields: [
                   { key: "data", value: JSON.stringify(post) },
                   { key: "image", value: childFileId },
+                  { key: "caption", value: post.caption || "Filler caption" },
                 ],
               },
             },
@@ -233,7 +235,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     }
   }
-
+  // Create a Instagram list metaobject if there are existing post metaobjects
   if (existingMetaobjectsJson != null) {
     const metaobjectResponse = await admin.graphql(metaobjectCreate, {
       variables: {
@@ -253,3 +255,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   return { posts, uploadResults, existingMetaobjectsJson, postObjectIds };
 };
+
+// Post. object need a list of file references for carousel support, so more images per file
+// - Data = useless
+// - Image = list of file references
+// - caption = multi line text field
+// - Look for more data to make fields out of
+// - Comments count
+// - Likes count
+// - Permalink
+// - Timestamp
+// - Username?
+// - view_count
+
+// Upsert instead of create metaobjects
+// Loop through fileid to create metaobjects?

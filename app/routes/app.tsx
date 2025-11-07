@@ -19,10 +19,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
 
-
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
-
       <s-app-nav>
         <Link to="/app" aria-label="Home">
           Home
@@ -41,6 +39,12 @@ export default function App() {
         </Link>
         <Link to="/app/debug" aria-label="Debug">
           Debug
+        </Link>
+        <Link
+          to="/api/delete-instagram-data"
+          aria-label="Delete Instagram Data"
+        >
+          Delete data
         </Link>
       </s-app-nav>
 

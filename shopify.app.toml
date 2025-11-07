@@ -39,7 +39,11 @@ type = "json"
 
 [metaobjects.app.instagram_post.fields.image]
 name = "Image"
-type = "file_reference"
+type = "list.file_reference"
+
+[metaobjects.app.instagram_post.fields.caption]
+name = "Caption"
+type = "multi_line_text_field"
 
 [metaobjects.app.instagram_list]
 name = "Instagram List"

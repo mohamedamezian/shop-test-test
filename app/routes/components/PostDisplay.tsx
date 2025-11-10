@@ -1,20 +1,29 @@
 // app/routes/components/PostDisplay.tsx
-import { Card, Text, Image, BlockStack, InlineGrid, Button } from '@shopify/polaris'
-import { EditIcon } from '@shopify/polaris-icons'
-import type { InstagramPost } from '../api.instagram.post'
+import {
+  Card,
+  Text,
+  Image,
+  BlockStack,
+  InlineGrid,
+  Button,
+  VideoThumbnail,
+} from "@shopify/polaris";
+import { EditIcon } from "@shopify/polaris-icons";
+import type { InstagramPost } from "../api.instagram.post";
 
 interface PostDisplayProps {
-  post: InstagramPost
+  post: InstagramPost;
 }
 
 export function PostDisplay({ post }: PostDisplayProps) {
-  // Helper: render a single image card
-  const renderImage = (
-    imageUrl: string,
+  // Helper: render a single media card (image or video)
+  const renderMedia = (
+    mediaUrl: string,
     mediaType: string,
     caption?: string,
     username?: string,
-    key?: string | number
+    key?: string | number,
+    thumbnailUrl?: string,
   ) => (
     <Card key={key ?? post.id} roundedAbove="sm">
       <BlockStack gap="400">
@@ -22,7 +31,14 @@ export function PostDisplay({ post }: PostDisplayProps) {
           <Text as="h2" variant="headingSm">
             Instagram Post #{post.id}
           </Text>
-          <Image source={imageUrl} alt={caption || 'Instagram image'} />
+          {mediaType === "VIDEO" ? (
+            <VideoThumbnail
+              thumbnailUrl={thumbnailUrl || mediaUrl}
+              onClick={() => window.open(mediaUrl, "_blank")}
+            />
+          ) : (
+            <Image source={mediaUrl} alt={caption || "Instagram image"} />
+          )}
         </BlockStack>
 
         <BlockStack gap="200">
@@ -40,32 +56,49 @@ export function PostDisplay({ post }: PostDisplayProps) {
           <Text as="p" variant="bodyMd">
             Post type: {mediaType}
             <br />
-            Caption: {caption || '—'}
+            Caption: {caption || "—"}
             <br />
-            Username: {username || '—'}
+            Username: {username || "—"}
           </Text>
         </BlockStack>
       </BlockStack>
     </Card>
-  )
+  );
 
-  // Render: single image or carousel
-  if (post.media_type === 'CAROUSEL_ALBUM' && post.children?.data) {
+  // Render: single image/video or carousel (with images/videos)
+  if (post.media_type === "CAROUSEL_ALBUM" && post.children?.data) {
     return (
       <>
         {post.children.data.map((child, index) =>
-          renderImage(
+          renderMedia(
             child.media_url,
             child.media_type,
             post.caption,
             post.username,
-            `${post.id}-${index}`
-          )
+            `${post.id}-${index}`,
+            child.thumbnail_url,
+          ),
         )}
       </>
-    )
+    );
   }
-
+  // Single video
+  if (post.media_type === "VIDEO") {
+    return renderMedia(
+      post.media_url,
+      post.media_type,
+      post.caption,
+      post.username,
+      post.id,
+      post.thumbnail_url,
+    );
+  }
   // Single image
-  return renderImage(post.media_url, post.media_type, post.caption, post.username)
+  return renderMedia(
+    post.media_url,
+    post.media_type,
+    post.caption,
+    post.username,
+    post.id,
+  );
 }

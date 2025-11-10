@@ -4,23 +4,34 @@
   {% if block.settings.heading %}
     <h2 class="instagram-posts-heading">{{ block.settings.heading }}</h2>
   {% endif %}
-  
+
   <div class="instagram-posts-grid">
     {% assign all_posts = shop.metaobjects['$app:instagram_post'].values %}
     {% assign posts_limit = block.settings.posts_limit | default: 12 %}
-    
+
     {% if all_posts.size > 0 %}
       {% for post in all_posts limit: posts_limit %}
         <div class="instagram-post-item">
           {% comment %} Parse data as string since it's stored as JSON {% endcomment %}
           {% assign data = post.data.value | append: '' %}
-          {% assign caption = data | split: '"caption"=>"' | last | split: '"' | first | truncate: 150 %}
+          {% assign caption = post.caption.value | default: '' | truncate: 150 %}
           {% assign link = data | split: '"permalink"=>"' | last | split: '"' | first %}
-          
-          {% comment %} Display post using Shopify-hosted image {% endcomment %}
+
+          {% comment %} Display post using Shopify-hosted images {% endcomment %}
           <a href="{{ link }}" target="_blank" class="instagram-post-link">
-            <div class="instagram-post-image">
-              <img src="{{ post.image | file_url }}" alt="{{ caption }}" width="auto" height="auto" loading="lazy" />
+            <div class="instagram-post-images">
+              {% comment %} Access first image from MediaListDrop {% endcomment %}
+              {% if post.images.value %}
+                {% for image in post.images.value limit: 1 %}
+                  <img
+                    src="{{ image | image_url: width: 600 }}"
+                    alt="{{ caption }}"
+                    width="600"
+                    height="600"
+                    loading="lazy"
+                  >
+                {% endfor %}
+              {% endif %}
               <div class="instagram-post-overlay">
                 <p class="instagram-post-caption">{{ caption }}</p>
               </div>
@@ -38,40 +49,63 @@
   .instagram-posts-section {
     padding: 2rem 0;
   }
-  
+
   .instagram-posts-heading {
     text-align: center;
     margin-bottom: 2rem;
     font-size: 2rem;
   }
-  
+
   .instagram-posts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 2rem;
   }
-  
+
   .instagram-post-item {
     border-radius: 8px;
     overflow: hidden;
     transition: transform 0.3s ease;
   }
-  
+
   .instagram-post-item:hover {
     transform: translateY(-4px);
   }
-  
+
   .instagram-post-link {
     display: block;
     text-decoration: none;
     color: inherit;
   }
-  
+
+  .instagram-post-images {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%; /* 1:1 aspect ratio for square grid */
+  }
+
+  .instagram-post-images img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+
+  .instagram-post-link:hover .instagram-post-images img {
+    transform: scale(1.05);
+  }
+
   .instagram-post-image {
     position: relative;
     overflow: hidden;
   }
-  
+
   .instagram-post-image img {
     width: 100%;
     height: 300px;
@@ -79,11 +113,11 @@
     display: block;
     transition: transform 0.3s ease;
   }
-  
+
   .instagram-post-link:hover .instagram-post-image img {
     transform: scale(1.05);
   }
-  
+
   .instagram-post-overlay {
     position: absolute;
     top: 0;
@@ -98,11 +132,11 @@
     transition: opacity 0.3s ease;
     padding: 1.5rem;
   }
-  
+
   .instagram-post-link:hover .instagram-post-overlay {
     opacity: 1;
   }
-  
+
   .instagram-post-caption {
     color: white;
     font-size: 0.9rem;

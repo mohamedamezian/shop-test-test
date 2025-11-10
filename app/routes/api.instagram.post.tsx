@@ -7,6 +7,7 @@ export interface InstagramCarouselData {
   media_url: string;
   media_type: string;
   id: string;
+  thumbnail_url?: string;
 }
 export interface InstagramPost {
   id: string;
@@ -136,16 +137,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   for (const post of posts) {
     console.log(`Processing post: ${post.id}, type: ${post.media_type}`);
     const uniqueKey = post.id;
-    if (existingKeys.has(uniqueKey)) {
+
+    // Check if this post's main image already exists (for non-carousel)
+    const mainImageKey = uniqueKey;
+    if (existingKeys.has(mainImageKey)) {
       // Skip already uploaded posts
-      console.log(`Post already exists: ${post.id}`);
+      console.log(`Post already exists (found ${mainImageKey}): ${post.id}`);
       continue;
     }
-    // Define fileId for instagram_post image field
-    let fileId: string;
 
-    // Normal post upload
+    // Collect all file IDs for this post (normal or carousel)
+    let fileIds: string[] = [];
+
     if (post.media_type !== "CAROUSEL_ALBUM") {
+      // Normal post upload
       const postResponse = await admin.graphql(fileCreation, {
         variables: {
           files: [
@@ -158,37 +163,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           ],
         },
       });
-      // take the file ID on creation from response
       const postJson = await postResponse.json();
-      fileId = postJson.data?.fileCreate?.files?.[0]?.id;
+      fileIds = (postJson.data?.fileCreate?.files || []).map((f: any) => f.id);
       uploadResults.push(postJson);
-
-      // Only create metaobject if we have a file ID
-      if (fileId) {
-        const metaobjectResponse = await admin.graphql(metaobjectCreate, {
-          variables: {
-            metaobject: {
-              type: "$app:instagram_post",
-              fields: [
-                { key: "data", value: JSON.stringify(post) },
-                { key: "image", value: fileId },
-                { key: "caption", value: post.caption || "Filler caption" },
-              ],
-            },
-          },
-        });
-
-        const metaobjectJson = await metaobjectResponse.json();
-        const metaobjectId =
-          metaobjectJson.data?.metaobjectCreate?.metaobject?.id;
-        postObjectIds.push(metaobjectId);
-        console.log(
-          `Created and activated metaobject for post ${post.id}: ${metaobjectId}`,
-        );
-      }
     } else {
-      // For carousels, create a separate metaobject for each child img
-
+      // For carousels, upload all child images and collect their file IDs
       for (const child of post.children?.data || []) {
         const childUniqueKey = `${uniqueKey}_${child.id}`;
         const carouselResponse = await admin.graphql(fileCreation, {
@@ -203,36 +182,47 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             ],
           },
         });
-
         const carouselJson = await carouselResponse.json();
-        const childFileId = carouselJson.data?.fileCreate?.files?.[0]?.id;
+        const childFileIds = (carouselJson.data?.fileCreate?.files || []).map(
+          (f: any) => f.id,
+        );
+        fileIds.push(...childFileIds);
         uploadResults.push(carouselJson);
-
-        // Create metaobject for this carousel image
-        if (childFileId) {
-          const metaobjectResponse = await admin.graphql(metaobjectCreate, {
-            variables: {
-              metaobject: {
-                type: "$app:instagram_post",
-                fields: [
-                  { key: "data", value: JSON.stringify(post) },
-                  { key: "image", value: childFileId },
-                  { key: "caption", value: post.caption || "Filler caption" },
-                ],
-              },
-            },
-          });
-
-          const metaobjectJson = await metaobjectResponse.json();
-
-          const metaobjectId =
-            metaobjectJson.data?.metaobjectCreate?.metaobject?.id;
-          postObjectIds.push(metaobjectId);
-          console.log(
-            `Created and activated metaobject for carousel image ${post.id}: ${metaobjectId}`,
-          );
-        }
       }
+    }
+
+    // Only create metaobject if we have at least one file ID
+    if (fileIds.length > 0) {
+      // For list.file_reference fields, pass the array as a JSON string
+      const metaobjectResponse = await admin.graphql(metaobjectCreate, {
+        variables: {
+          metaobject: {
+            type: "$app:instagram_post",
+            fields: [
+              { key: "data", value: JSON.stringify(post) },
+              { key: "images", value: JSON.stringify(fileIds) },
+              { key: "caption", value: post.caption || "Filler caption" },
+            ],
+          },
+        },
+      });
+
+      const metaobjectJson = await metaobjectResponse.json();
+
+      // Log errors if any
+      if (metaobjectJson.data?.metaobjectCreate?.userErrors?.length > 0) {
+        console.error(
+          `Metaobject creation errors for post ${post.id}:`,
+          metaobjectJson.data.metaobjectCreate.userErrors,
+        );
+      }
+
+      const metaobjectId =
+        metaobjectJson.data?.metaobjectCreate?.metaobject?.id;
+      postObjectIds.push(metaobjectId);
+      console.log(
+        `Created metaobject for post ${post.id} with ${fileIds.length} image(s): ${metaobjectId}`,
+      );
     }
   }
   // Create a Instagram list metaobject if there are existing post metaobjects

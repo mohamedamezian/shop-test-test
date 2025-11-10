@@ -37,8 +37,8 @@ name = "Data"
 type = "json"
 
 
-[metaobjects.app.instagram_post.fields.image]
-name = "Image"
+[metaobjects.app.instagram_post.fields.images]
+name = "Images"
 type = "list.file_reference"
 
 [metaobjects.app.instagram_post.fields.caption]

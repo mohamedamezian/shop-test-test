@@ -9,6 +9,7 @@ export interface InstagramCarouselData {
   id: string;
   thumbnail_url?: string;
 }
+
 export interface InstagramPost {
   id: string;
   media_type: string;
@@ -91,6 +92,29 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
         }`;
 
+  const videoFileCreation = `#graphql
+        mutation fileCreate($files: [FileCreateInput!]!) {
+            fileCreate(files: $files) {
+                files {
+                    id
+                    fileStatus
+                    alt
+                    createdAt
+                    ... on Video {
+                      originalSource{
+                        fileSize
+                        url
+                        mimeType
+                      }
+                      status
+                    } 
+            } userErrors {
+                field
+                message
+            }
+        }
+        }`;
+
   const metaobjectCreate = `#graphql
     mutation metaobjectCreate($metaobject: MetaobjectCreateInput!) {
       metaobjectCreate(metaobject: $metaobject) {
@@ -144,6 +168,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       // Skip already uploaded posts
       console.log(`Post already exists (found ${mainImageKey}): ${post.id}`);
       continue;
+    }
+
+    if (post.media_type === "VIDEO") {
+      // Handle video uploads
+      const videoResponse = await admin.graphql(videoFileCreation, {
+        variables: {
+          files: [
+            {
+              alt: `instagram_post_${uniqueKey}`,
+              contentType: "EXTERNAL_VIDEO",
+              originalSource: post.permalink,
+              filename: `instagram_post_${uniqueKey}.mp4`,
+            },
+          ],
+        },
+      });
+      const videoJson = await videoResponse.json();
+      uploadResults.push(videoJson);
     }
 
     // Collect all file IDs for this post (normal or carousel)

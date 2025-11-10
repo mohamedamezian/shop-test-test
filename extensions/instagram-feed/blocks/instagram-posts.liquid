@@ -17,19 +17,43 @@
           {% assign caption = post.caption.value | default: '' | truncate: 150 %}
           {% assign link = data | split: '"permalink"=>"' | last | split: '"' | first %}
 
-          {% comment %} Display post using Shopify-hosted images {% endcomment %}
+          {% comment %} Display post using Shopify-hosted images/videos {% endcomment %}
           <a href="{{ link }}" target="_blank" class="instagram-post-link">
             <div class="instagram-post-images">
-              {% comment %} Access first image from MediaListDrop {% endcomment %}
+              {% comment %} Access first media from MediaListDrop {% endcomment %}
               {% if post.images.value %}
-                {% for image in post.images.value limit: 1 %}
-                  <img
-                    src="{{ image | image_url: width: 600 }}"
-                    alt="{{ caption }}"
-                    width="600"
-                    height="600"
-                    loading="lazy"
-                  >
+                {% for media in post.images.value limit: 1 %}
+                  {% comment %} Debug output - remove after testing {% endcomment %}
+                  <div style="display:none;" class="debug-media">
+                    Type: {{ media.media_content_type }}<br>
+                    Has sources: {{ media.sources }}<br>
+                    Media object: {{ media }}
+                  </div>
+                  
+                  {% comment %} Videos have sources property {% endcomment %}
+                  {% if media.sources %}
+                    <video
+                      class="instagram-video"
+                      loop
+                      muted
+                      playsinline
+                      preload="auto"
+                      data-video="true"
+                    >
+                      {% for source in media.sources %}
+                        <source src="{{ source.url }}" type="{{ source.mime_type }}">
+                      {% endfor %}
+                    </video>
+                  {% else %}
+                    {% comment %} This is an image {% endcomment %}
+                    <img
+                      src="{{ media | image_url: width: 600 }}"
+                      alt="{{ caption }}"
+                      width="600"
+                      height="600"
+                      loading="lazy"
+                    >
+                  {% endif %}
                 {% endfor %}
               {% endif %}
               <div class="instagram-post-overlay">
@@ -97,7 +121,19 @@
     transition: transform 0.3s ease;
   }
 
-  .instagram-post-link:hover .instagram-post-images img {
+  .instagram-post-images video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+
+  .instagram-post-link:hover .instagram-post-images img,
+  .instagram-post-link:hover .instagram-post-images video {
     transform: scale(1.05);
   }
 
@@ -145,6 +181,52 @@
     margin: 0;
   }
 </style>
+
+<script>
+  // Play videos on hover
+  (function() {
+    'use strict';
+    
+    function initVideoHover() {
+      const instagramPosts = document.querySelectorAll('.instagram-post-item');
+      
+      console.log('Found', instagramPosts.length, 'Instagram posts');
+      
+      instagramPosts.forEach(function(post) {
+        const video = post.querySelector('video');
+        
+        if (video) {
+          console.log('Found video in post:', video);
+          
+          // Make sure video is ready
+          video.load();
+          
+          // Play video when hovering over the post
+          post.addEventListener('mouseenter', function() {
+            console.log('Mouse entered, playing video');
+            video.play().catch(function(error) {
+              console.error('Video play failed:', error);
+            });
+          });
+          
+          // Pause and reset video when mouse leaves
+          post.addEventListener('mouseleave', function() {
+            console.log('Mouse left, pausing video');
+            video.pause();
+            video.currentTime = 0;
+          });
+        }
+      });
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initVideoHover);
+    } else {
+      initVideoHover();
+    }
+  })();
+</script>
 
 {% schema %}
 {

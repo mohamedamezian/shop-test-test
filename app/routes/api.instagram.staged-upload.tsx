@@ -22,6 +22,8 @@ export interface InstagramPost {
   children?: {
     data: InstagramCarouselData[];
   };
+  like_count?: number;
+  comments_count?: number;
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -83,8 +85,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // ========================================
   async function uploadVideoWithStaging(videoUrl: string, alt: string) {
     try {
-      console.log(`Downloading video for staging: ${alt}`);
-
       // Step 1: Download video from Instagram
       const videoResponse = await fetch(videoUrl);
       if (!videoResponse.ok) {
@@ -96,8 +96,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const videoBlob = await videoResponse.blob();
       const videoArrayBuffer = await videoBlob.arrayBuffer();
       const fileSize = videoArrayBuffer.byteLength;
-
-      console.log(`Video size: ${fileSize} bytes`);
 
       // Step 2: Create staged upload
       const stagedMutation = `#graphql
@@ -141,8 +139,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         throw new Error("Failed to create staged upload");
       }
 
-      console.log(`Uploading video to staged target`);
-
       // Step 3: Upload to staged target
       const formData = new FormData();
       stagedTarget.parameters.forEach((param: any) => {
@@ -160,8 +156,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           `Failed to upload to staged target: ${uploadResponse.statusText}`,
         );
       }
-
-      console.log(`Creating Shopify video file`);
 
       // Step 4: Create the file in Shopify
       const fileData = await createShopifyFile(
@@ -197,15 +191,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     try {
       const isVideo = mediaType === "VIDEO";
 
-      console.log(`Uploading ${mediaType}: ${alt}`);
-
       if (isVideo) {
         // Videos need staged upload because Instagram URLs are temporary
         return await uploadVideoWithStaging(mediaUrl, alt);
       } else {
         // Images can be uploaded directly
         const fileData = await createShopifyFile(mediaUrl, alt, "IMAGE");
-        console.log(`Shopify image file created for ${alt}`);
         return fileData;
       }
     } catch (error) {
@@ -250,6 +241,108 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             { key: "data", value: JSON.stringify(post) },
             { key: "images", value: JSON.stringify(fileIds) },
             { key: "caption", value: post.caption || "No caption" },
+          ],
+        },
+      },
+    });
+
+    const data = await response.json();
+    return data;
+  }
+
+  // ========================================
+  // HELPER FUNCTION 4.5: metaObjectUpsert instead of Create to avoid duplicates
+  // ========================================
+  async function upsertPostMetaobject(post: InstagramPost, fileIds: string[]) {
+    const mutation = `#graphql
+    mutation UpsertPostMetaObject($handle: MetaobjectHandleInput!, $metaobject: MetaobjectUpsertInput!) {
+      metaobjectUpsert(handle: $handle, metaobject: $metaobject) {
+        metaobject {
+          id
+          handle
+          Data: field(key: "data"){
+            value
+          },
+          Images: field(key: "images"){
+            value
+          },
+          Caption: field(key: "caption"){
+            value
+          },
+          Likes: field(key: "likes"){
+            value
+          },
+          Comments: field(key: "comments"){
+            value
+          },
+
+
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+    `;
+
+    const response = await admin.graphql(mutation, {
+      variables: {
+        handle: {
+          type: "$app:instagram_post",
+          handle: `instagram-post-${post.id}`,
+        },
+        metaobject: {
+          fields: [
+            { key: "data", value: JSON.stringify(post) },
+            { key: "images", value: JSON.stringify(fileIds) },
+            { key: "caption", value: post.caption || "No caption" },
+            { key: "likes", value: String(post.like_count) || "0" },
+            { key: "comments", value: String(post.comments_count) || "0" },
+          ],
+        },
+      },
+    });
+
+    const data = await response.json();
+    return data;
+  }
+
+  // ========================================
+  // HELPER FUNCTION 4.6: Upsert Instagram list metaobject
+  // ========================================
+  async function upsertListMetaobject(igData: any, postObjectIds: string[]) {
+    const mutation = `#graphql
+    mutation UpsertListMetaObject($handle: MetaobjectHandleInput!, $metaobject: MetaobjectUpsertInput!) {
+      metaobjectUpsert(handle: $handle, metaobject: $metaobject) {
+        metaobject {
+          id
+          handle
+          Data: field(key: "data"){
+            value
+          },
+          Posts: field(key: "posts"){
+            value
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+    `;
+
+    const response = await admin.graphql(mutation, {
+      variables: {
+        handle: {
+          type: "$app:instagram_list",
+          handle: "instagram-feed-list",
+        },
+        metaobject: {
+          fields: [
+            { key: "data", value: JSON.stringify(igData) },
+            { key: "posts", value: JSON.stringify(postObjectIds) },
           ],
         },
       },
@@ -316,10 +409,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Fetch posts from Instagram API
   const igResponse = await fetch(
-    `https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url,permalink,caption,timestamp,username,children{media_url,media_type,thumbnail_url}&access_token=${account.accessToken}`,
+    `https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url,view_count,like_count,username,comments_count,permalink,caption,timestamp,children{media_url,media_type,thumbnail_url}&access_token=${account.accessToken}`,
   );
   const igData = await igResponse.json();
   const posts = igData.data as InstagramPost[];
+
+  console.log(
+    `📸 Syncing ${posts.length} Instagram posts (${existingKeys.size} already exist)`,
+  );
 
   // Track results
   const uploadResults = [];
@@ -327,11 +424,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Loop through each Instagram post
   for (const post of posts) {
-    console.log(`\n--- Processing post: ${post.id} (${post.media_type}) ---`);
-
     // Skip if already uploaded
     if (existingKeys.has(post.id)) {
-      console.log(`Post ${post.id} already exists, skipping`);
       continue;
     }
 
@@ -341,10 +435,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Handle different post types
     if (post.media_type === "CAROUSEL_ALBUM" && post.children?.data) {
       // This is a carousel with multiple images/videos
-      console.log(
-        `Processing carousel with ${post.children.data.length} items`,
-      );
-
       for (let i = 0; i < post.children.data.length; i++) {
         const child = post.children.data[i];
         const childAlt = `instagram_post_${post.id}_${child.id}`;
@@ -384,60 +474,37 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     // Create metaobject if we have file IDs
     if (fileIds.length > 0) {
-      console.log(`Creating metaobject with ${fileIds.length} file(s)`);
-      const metaobjectResult = await createPostMetaobject(post, fileIds);
+      const metaobjectResult = await upsertPostMetaobject(post, fileIds);
 
       // Check for errors
-      if (metaobjectResult.data?.metaobjectCreate?.userErrors?.length > 0) {
+      if (metaobjectResult.data?.metaobjectUpsert?.userErrors?.length > 0) {
         console.error(
-          `Metaobject errors:`,
-          metaobjectResult.data.metaobjectCreate.userErrors,
+          `  ✗ Error:`,
+          metaobjectResult.data.metaobjectUpsert.userErrors,
         );
       } else {
         const metaobjectId =
-          metaobjectResult.data?.metaobjectCreate?.metaobject?.id;
+          metaobjectResult.data?.metaobjectUpsert?.metaobject?.id;
         postObjectIds.push(metaobjectId);
-        console.log(`Created metaobject: ${metaobjectId}`);
       }
     }
   }
 
   // Create Instagram list metaobject
   if (postObjectIds.length > 0) {
-    const listMutation = `#graphql
-      mutation metaobjectCreate($metaobject: MetaobjectCreateInput!) {
-        metaobjectCreate(metaobject: $metaobject) {
-          metaobject {
-            id
-            handle
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `;
+    const listResult = await upsertListMetaobject(igData, postObjectIds);
 
-    const listResponse = await admin.graphql(listMutation, {
-      variables: {
-        metaobject: {
-          type: "$app:instagram_list",
-          fields: [
-            { key: "data", value: JSON.stringify(igData) },
-            { key: "posts", value: JSON.stringify(postObjectIds) },
-          ],
-        },
-      },
-    });
-
-    const listData = await listResponse.json();
-    const listId = listData.data?.metaobjectCreate?.metaobject?.id;
-    console.log(`Created Instagram list metaobject: ${listId}`);
+    if (listResult.data?.metaobjectUpsert?.userErrors?.length > 0) {
+      console.error(
+        `✗ List error:`,
+        listResult.data.metaobjectUpsert.userErrors,
+      );
+    }
   }
 
   return {
     success: true,
+    posts,
     postsProcessed: posts.length,
     postsUploaded: postObjectIds.length,
     uploadResults,

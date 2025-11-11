@@ -284,8 +284,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const listObjectId = metaobjectJson.data?.metaobjectCreate?.metaobject?.id;
     console.log(`Created Instagram list metaobject: ${listObjectId}`);
   }
+  return null;
 
-  return { posts, uploadResults, existingMetaobjectsJson, postObjectIds };
+  // return { posts, uploadResults, existingMetaobjectsJson, postObjectIds };
 };
 
 // Post. object need a list of file references for carousel support, so more images per file

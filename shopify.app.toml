@@ -44,6 +44,13 @@ type = "list.file_reference"
 [metaobjects.app.instagram_post.fields.caption]
 name = "Caption"
 type = "multi_line_text_field"
+[metaobjects.app.instagram_post.fields.likes]
+name = "Likes"
+type = "number_integer"
+[metaobjects.app.instagram_post.fields.comments]
+name = "Comments"
+type = "number_integer"
+
 
 [metaobjects.app.instagram_list]
 name = "Instagram List"

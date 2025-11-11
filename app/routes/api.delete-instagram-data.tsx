@@ -52,7 +52,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const filesQuery = await admin.graphql(`
     #graphql
     query {
-      files(first: 100, query: "instagram_post_") {
+      files(first: 100, query: "alt:instagram_post_") {
         edges { node { id } }
       }
     }

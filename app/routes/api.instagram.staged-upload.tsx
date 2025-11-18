@@ -2,6 +2,8 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { projectUpdate } from "next/dist/build/swc/generated-native";
+import { writeFile } from "fs/promises";
+import { join } from "path";
 
 // Types for Instagram data
 export interface InstagramCarouselData {
@@ -29,6 +31,26 @@ export interface InstagramPost {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
+
+  // ========================================
+  // LOGGING SETUP
+  // ========================================
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const logDir = join(process.cwd(), "logs");
+  const sessionLog = {
+    timestamp: new Date().toISOString(),
+    shop: session.shop,
+    operations: [] as any[],
+    summary: {} as any,
+  };
+
+  function addLog(operation: string, data: any) {
+    sessionLog.operations.push({
+      timestamp: new Date().toISOString(),
+      operation,
+      ...data,
+    });
+  }
 
   // ========================================
   // HELPER FUNCTION 1: Create Shopify file from URL (for images)
@@ -78,6 +100,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
     const data = await response.json();
+
+    addLog("fileCreate", {
+      input: { alt, contentType, mediaUrl },
+      response: data,
+      success: !data.data?.fileCreate?.userErrors?.length,
+      fileIds: data.data?.fileCreate?.files?.map((f: any) => f.id) || [],
+    });
+
     return data;
   }
 
@@ -136,6 +166,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const stagedTarget =
         stagedData.data?.stagedUploadsCreate?.stagedTargets?.[0];
 
+      addLog("stagedUploadCreate", {
+        input: { alt, fileSize, resource: "VIDEO" },
+        response: stagedData,
+        success: !!stagedTarget,
+        targetUrl: stagedTarget?.url,
+      });
+
       if (!stagedTarget) {
         throw new Error("Failed to create staged upload");
       }
@@ -150,6 +187,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const uploadResponse = await fetch(stagedTarget.url, {
         method: "POST",
         body: formData,
+      });
+
+      addLog("stagedUploadSubmit", {
+        alt,
+        uploadUrl: stagedTarget.url,
+        status: uploadResponse.status,
+        ok: uploadResponse.ok,
       });
 
       if (!uploadResponse.ok) {
@@ -306,6 +350,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
     const data = await response.json();
+
+    addLog("metaobjectUpsert_post", {
+      postId: post.id,
+      handle: `instagram-post-${post.id}`,
+      fileCount: fileIds.length,
+      fileIds,
+      input: {
+        caption: post.caption,
+        likes: post.like_count,
+        comments: post.comments_count,
+      },
+      response: data,
+      success: !data.data?.metaobjectUpsert?.userErrors?.length,
+      metaobjectId: data.data?.metaobjectUpsert?.metaobject?.id,
+      userErrors: data.data?.metaobjectUpsert?.userErrors || [],
+    });
+
     return data;
   }
 
@@ -355,41 +416,60 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
     const data = await response.json();
+
+    addLog("metaobjectUpsert_list", {
+      handle: "instagram-feed-list",
+      postCount: postObjectIds.length,
+      postObjectIds,
+      response: data,
+      success: !data.data?.metaobjectUpsert?.userErrors?.length,
+      metaobjectId: data.data?.metaobjectUpsert?.metaobject?.id,
+      capabilities: data.data?.metaobjectUpsert?.metaobject?.capabilities,
+      userErrors: data.data?.metaobjectUpsert?.userErrors || [],
+    });
+
     return data;
   }
 
   // ========================================
-  // HELPER FUNCTION 5: Get existing Instagram posts
+  // HELPER FUNCTION 5: Check if a single post exists by handle
   // ========================================
-  async function getExistingPosts() {
+  async function getExistingPost(postId: string) {
+    const handle = `instagram-post-${postId}`;
+
     const query = `#graphql
-      query {
-        files(first: 50, query: "instagram-post_") {
-          edges {
-            node {
-              ... on MediaImage {
-                alt
-              }
-              ... on Video {
-                alt
-              }
-            }
+      query GetPostByHandle($handle: String!) {
+        metaobjectByHandle(handle: {type: "instagram-post", handle: $handle}) {
+          id
+          handle
+          fields {
+            key
+            value
           }
         }
       }
     `;
 
-    const response = await admin.graphql(query);
+    const response = await admin.graphql(query, {
+      variables: { handle },
+    });
     const data = await response.json();
 
-    // Get all the alt texts and extract the post IDs
-    const existingKeys = new Set(
-      data.data.files.edges.map(
-        (e: any) => e.node.alt?.replace("instagram-post_", "") || "",
-      ),
-    );
+    const metaobject = data.data?.metaobjectByHandle;
 
-    return existingKeys;
+    if (!metaobject) {
+      return null;
+    }
+
+    // Get the images field value (array of file IDs)
+    const imagesField = metaobject.fields.find((f: any) => f.key === "images");
+    const fileIds = imagesField ? JSON.parse(imagesField.value) : [];
+
+    return {
+      metaobjectId: metaobject.id,
+      fileIds,
+      handle: metaobject.handle,
+    };
   }
 
   // ========================================
@@ -410,9 +490,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return { error: "No Instagram account connected" };
   }
 
-  // Get existing posts to avoid duplicates
-  const existingKeys = await getExistingPosts();
-
   // Fetch posts from Instagram API
   const igResponse = await fetch(
     `https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url,view_count,like_count,username,comments_count,permalink,caption,timestamp,children{media_url,media_type,thumbnail_url}&access_token=${account.accessToken}`,
@@ -420,37 +497,78 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const igData = await igResponse.json();
   const posts = igData.data as InstagramPost[];
 
-  console.log(
-    `📸 Syncing ${posts.length} Instagram posts (${existingKeys.size} already exist)`,
-  );
+  addLog("fetchInstagramPosts", {
+    postsCount: posts.length,
+    posts: posts.map((p) => ({
+      id: p.id,
+      media_type: p.media_type,
+      has_children: !!p.children,
+      children_count: p.children?.data?.length || 0,
+      likes: p.like_count,
+      comments: p.comments_count,
+    })),
+  });
+
+  console.log(`📸 Syncing ${posts.length} Instagram posts`);
 
   // Track results
   const uploadResults = [];
   const postObjectIds = [];
+  let existingCount = 0;
 
   // Loop through each Instagram post
   for (const post of posts) {
     // Array to collect all file IDs for this post
     let fileIds: string[] = [];
 
+    // Check if post already exists by handle
+    const existingPost = await getExistingPost(post.id);
+
     // UPDATING EXISTING POSTS LOGIC
-    // If post already exists, we may want to update it (e.g., new likes/comments)
+    // If post already exists, we update it with new data (likes, comments) but reuse existing files
 
-    if (existingKeys.has(post.id)) {
+    if (existingPost) {
+      existingCount++;
       console.log(`🔄 Updating existing post ${post.id}`);
-      if (fileIds.length > 0) {
-        const metaobjectResult = await upsertPostMetaobject(post, fileIds);
 
-        // Check for errors
-        if (metaobjectResult.data?.metaobjectUpsert?.userErrors?.length > 0) {
-          console.error(
-            `  ✗ Error:`,
-            metaobjectResult.data.metaobjectUpsert.userErrors,
-          );
-        }
+      // Reuse existing file IDs
+      fileIds = existingPost.fileIds;
+
+      addLog("postProcessing", {
+        postId: post.id,
+        action: "update",
+        reason: "metaobjectByHandle found existing post",
+        existingMetaobjectId: existingPost.metaobjectId,
+        reusingFileIds: fileIds.length,
+        fileIds,
+      });
+
+      // Update the metaobject with new data (likes, comments, etc.) but keep same files
+      const metaobjectResult = await upsertPostMetaobject(post, fileIds);
+
+      // Check for errors
+      if (metaobjectResult.data?.metaobjectUpsert?.userErrors?.length > 0) {
+        console.error(
+          `  ✗ Error:`,
+          metaobjectResult.data.metaobjectUpsert.userErrors,
+        );
+      } else {
+        const metaobjectId =
+          metaobjectResult.data?.metaobjectUpsert?.metaobject?.id;
+        postObjectIds.push(metaobjectId);
       }
-      console.log(`Updated post ${post.id} successfully.`);
+
+      console.log(`✓ Updated post ${post.id} successfully.`);
     } else {
+      addLog("postProcessing", {
+        postId: post.id,
+        action: "create",
+        reason: "existingKeys.has(post.id) = false",
+        mediaType: post.media_type,
+        isCarousel: post.media_type === "CAROUSEL_ALBUM",
+        childrenCount: post.children?.data?.length || 0,
+      });
+
       // Handle different post types
       if (post.media_type === "CAROUSEL_ALBUM" && post.children?.data) {
         // This is a carousel with multiple images/videos
@@ -524,6 +642,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
   }
 
+  // Write log file
+  sessionLog.summary = {
+    postsProcessed: posts.length,
+    postsUploaded: postObjectIds.length,
+    existingPostsCount: existingCount,
+    operationsCount: sessionLog.operations.length,
+    fileUploads: sessionLog.operations.filter(
+      (op) => op.operation === "fileCreate",
+    ).length,
+    metaobjectUpserts: sessionLog.operations.filter((op) =>
+      op.operation.startsWith("metaobjectUpsert"),
+    ).length,
+    errors: sessionLog.operations.filter(
+      (op) => op.hasOwnProperty("success") && !op.success,
+    ).length,
+  };
+
+  try {
+    const logPath = join(logDir, `instagram-sync-${timestamp}.json`);
+    await writeFile(logPath, JSON.stringify(sessionLog, null, 2));
+    console.log(`📝 Log file written to: ${logPath}`);
+  } catch (error) {
+    console.error("Failed to write log file:", error);
+  }
+
   return {
     success: true,
     posts,
@@ -531,5 +674,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     postsUploaded: postObjectIds.length,
     uploadResults,
     postObjectIds,
+    logFile: `logs/instagram-sync-${timestamp}.json`,
   };
 };

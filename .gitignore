@@ -14,9 +14,9 @@ database.sqlite
 .env
 .env.*
 
-
-
-
+# Logs
+/logs
+*.log
 
 /extensions/*/dist
 

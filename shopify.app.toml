@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "02fee5ebd0c35e7e65f2bdb8944e1ffa"
-name = "IG-DevTools"
+name = "NN Instagram"
 application_url = "https://shop-test-test.vercel.app/"
 embedded = true
 

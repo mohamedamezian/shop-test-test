@@ -8,7 +8,8 @@ import { InstagramConnectButton } from "./components/InstagramConnectButton";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
+
   return data({ shop: session.shop });
 };
 
@@ -17,7 +18,6 @@ export default function Index() {
 
   return (
     <AppProvider i18n={translations}>
-      
       <div style={{ padding: "2rem" }}>
         <h1>Welcome to your app 🎉</h1>
         <InstagramConnectButton shop={data.shop} />

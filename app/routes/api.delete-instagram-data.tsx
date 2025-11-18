@@ -8,7 +8,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const postMetaobjectsQuery = await admin.graphql(`
     #graphql
     query {
-      metaobjects(type: "$app:instagram_post", first: 100) {
+      metaobjects(type: "instagram-post", first: 100) {
         edges { node { id } }
       }
     }
@@ -22,7 +22,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const listMetaobjectsQuery = await admin.graphql(`
     #graphql
     query {
-      metaobjects(type: "$app:instagram_list", first: 100) {
+      metaobjects(type: "instagram-list", first: 100) {
         edges { node { id } }
       }
     }
@@ -52,7 +52,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const filesQuery = await admin.graphql(`
     #graphql
     query {
-      files(first: 100, query: "alt:instagram_post_") {
+      files(first: 100, query: "alt:instagram-post_") {
         edges { node { id } }
       }
     }

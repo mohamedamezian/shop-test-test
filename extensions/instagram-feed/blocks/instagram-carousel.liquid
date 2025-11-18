@@ -1,0 +1,107 @@
+{% comment %} Instagram Feed {% endcomment %}
+
+{% assign all_posts = metaobjects['instagram-post'].values %}
+{% assign posts_limit = block.settings.posts_limit | default: 12 %}
+
+{% if all_posts and all_posts.size > 0 %}
+  <div class="instagram-feed">
+    {% for post in all_posts limit: posts_limit %}
+      <div class="instagram-post">
+        <div class="post-media">
+          {% for media in post.images.value limit: 1 %}
+            {% if media.sources %}
+              <video loop muted playsinline>
+                {% for source in media.sources %}
+                  <source src="{{ source.url }}" type="{{ source.mime_type }}">
+                {% endfor %}
+              </video>
+            {% else %}
+              <img
+                src="{{ media | image_url: width: 1000 }}"
+                alt="{{ post.caption.value }}"
+                width="1000"
+                height="1000"
+                loading="lazy"
+              >
+            {% endif %}
+          {% endfor %}
+        </div>
+        <div class="post-info">
+          <p>{{ post.caption.value | truncate: 100 }}</p>
+          <span>❤️ {{ post.likes.value }}</span>
+          <span>💬 {{ post.comments.value }}</span>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div
+    class="instagram-feed-empty"
+    style="padding:1rem;background:#fff;border:1px dashed #ddd;border-radius:8px;text-align:center;color:#666;"
+  >
+    <p style="margin:0">
+      No Instagram posts found. Add posts to the <code>instagram-post</code> metaobjects or connect the Instagram app.
+    </p>
+  </div>
+{% endif %}
+
+<style>
+  .instagram-feed {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    width: 100%;
+  }
+
+  .instagram-post {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    flex: 1 1 calc(25% - 1.5rem);
+    min-width: 250px;
+  }
+
+  .post-media {
+    position: relative;
+    padding-bottom: 100%;
+    background: #000;
+  }
+
+  .post-media img,
+  .post-media video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .post-info {
+    padding: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .instagram-post {
+      flex: 1 1 calc(50% - 1.5rem);
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Instagram Feed",
+  "target": "section",
+  "settings": [
+    {
+      "type": "range",
+      "id": "posts_limit",
+      "label": "Number of posts",
+      "min": 4,
+      "max": 24,
+      "step": 1,
+      "default": 12
+    }
+  ]
+}
+{% endschema %}

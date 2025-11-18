@@ -6,7 +6,7 @@
   {% endif %}
 
   <div class="instagram-posts-grid">
-    {% assign all_posts = shop.metaobjects['$app:instagram_post'].values %}
+    {% assign all_posts = shop.metaobjects['instagram-post'].values %}
     {% assign posts_limit = block.settings.posts_limit | default: 12 %}
 
     {% if all_posts.size > 0 %}
@@ -25,11 +25,13 @@
                 {% for media in post.images.value limit: 1 %}
                   {% comment %} Debug output - remove after testing {% endcomment %}
                   <div style="display:none;" class="debug-media">
-                    Type: {{ media.media_content_type }}<br>
-                    Has sources: {{ media.sources }}<br>
+                    Type: {{ media.media_content_type -}}
+                    <br>
+                    Has sources: {{ media.sources -}}
+                    <br>
                     Media object: {{ media }}
                   </div>
-                  
+
                   {% comment %} Videos have sources property {% endcomment %}
                   {% if media.sources %}
                     <video
@@ -184,33 +186,33 @@
 
 <script>
   // Play videos on hover
-  (function() {
+  (function () {
     'use strict';
-    
+
     function initVideoHover() {
       const instagramPosts = document.querySelectorAll('.instagram-post-item');
-      
+
       console.log('Found', instagramPosts.length, 'Instagram posts');
-      
-      instagramPosts.forEach(function(post) {
+
+      instagramPosts.forEach(function (post) {
         const video = post.querySelector('video');
-        
+
         if (video) {
           console.log('Found video in post:', video);
-          
+
           // Make sure video is ready
           video.load();
-          
+
           // Play video when hovering over the post
-          post.addEventListener('mouseenter', function() {
+          post.addEventListener('mouseenter', function () {
             console.log('Mouse entered, playing video');
-            video.play().catch(function(error) {
+            video.play().catch(function (error) {
               console.error('Video play failed:', error);
             });
           });
-          
+
           // Pause and reset video when mouse leaves
-          post.addEventListener('mouseleave', function() {
+          post.addEventListener('mouseleave', function () {
             console.log('Mouse left, pausing video');
             video.pause();
             video.currentTime = 0;
@@ -218,7 +220,7 @@
         }
       });
     }
-    
+
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initVideoHover);

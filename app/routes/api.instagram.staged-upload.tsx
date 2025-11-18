@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
+import { projectUpdate } from "next/dist/build/swc/generated-native";
 
 // Types for Instagram data
 export interface InstagramCarouselData {
@@ -217,38 +218,38 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // ========================================
   // HELPER FUNCTION 4: Create Instagram post metaobject
   // ========================================
-  async function createPostMetaobject(post: InstagramPost, fileIds: string[]) {
-    const mutation = `#graphql
-      mutation metaobjectCreate($metaobject: MetaobjectCreateInput!) {
-        metaobjectCreate(metaobject: $metaobject) {
-          metaobject {
-            id
-            handle
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `;
+  // async function createPostMetaobject(post: InstagramPost, fileIds: string[]) {
+  //   const mutation = `#graphql
+  //     mutation metaobjectCreate($metaobject: MetaobjectCreateInput!) {
+  //       metaobjectCreate(metaobject: $metaobject) {
+  //         metaobject {
+  //           id
+  //           handle
+  //         }
+  //         userErrors {
+  //           field
+  //           message
+  //         }
+  //       }
+  //     }
+  //   `;
 
-    const response = await admin.graphql(mutation, {
-      variables: {
-        metaobject: {
-          type: "$app:instagram_post",
-          fields: [
-            { key: "data", value: JSON.stringify(post) },
-            { key: "images", value: JSON.stringify(fileIds) },
-            { key: "caption", value: post.caption || "No caption" },
-          ],
-        },
-      },
-    });
+  //   const response = await admin.graphql(mutation, {
+  //     variables: {
+  //       metaobject: {
+  //         type: "instagram-post",
+  //         fields: [
+  //           { key: "data", value: JSON.stringify(post) },
+  //           { key: "image", value: JSON.stringify(fileIds) },
+  //           { key: "caption", value: post.caption || "No caption" },
+  //         ],
+  //       },
+  //     },
+  //   });
 
-    const data = await response.json();
-    return data;
-  }
+  //   const data = await response.json();
+  //   return data;
+  // }
 
   // ========================================
   // HELPER FUNCTION 4.5: metaObjectUpsert instead of Create to avoid duplicates
@@ -289,7 +290,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const response = await admin.graphql(mutation, {
       variables: {
         handle: {
-          type: "$app:instagram_post",
+          type: "instagram-post",
           handle: `instagram-post-${post.id}`,
         },
         metaobject: {
@@ -318,6 +319,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         metaobject {
           id
           handle
+          capabilities {
+            publishable {
+              status
+            }
+          }
           Data: field(key: "data"){
             value
           },
@@ -336,7 +342,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const response = await admin.graphql(mutation, {
       variables: {
         handle: {
-          type: "$app:instagram_list",
+          type: "instagram-list",
           handle: "instagram-feed-list",
         },
         metaobject: {
@@ -358,7 +364,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   async function getExistingPosts() {
     const query = `#graphql
       query {
-        files(first: 50, query: "instagram_post_") {
+        files(first: 50, query: "instagram-post_") {
           edges {
             node {
               ... on MediaImage {
@@ -379,7 +385,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Get all the alt texts and extract the post IDs
     const existingKeys = new Set(
       data.data.files.edges.map(
-        (e: any) => e.node.alt?.replace("instagram_post_", "") || "",
+        (e: any) => e.node.alt?.replace("instagram-post_", "") || "",
       ),
     );
 
@@ -424,71 +430,87 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Loop through each Instagram post
   for (const post of posts) {
-    // Skip if already uploaded
-    if (existingKeys.has(post.id)) {
-      continue;
-    }
-
     // Array to collect all file IDs for this post
     let fileIds: string[] = [];
 
-    // Handle different post types
-    if (post.media_type === "CAROUSEL_ALBUM" && post.children?.data) {
-      // This is a carousel with multiple images/videos
-      for (let i = 0; i < post.children.data.length; i++) {
-        const child = post.children.data[i];
-        const childAlt = `instagram_post_${post.id}_${child.id}`;
+    // UPDATING EXISTING POSTS LOGIC
+    // If post already exists, we may want to update it (e.g., new likes/comments)
 
-        // Upload the child media
+    if (existingKeys.has(post.id)) {
+      console.log(`🔄 Updating existing post ${post.id}`);
+      if (fileIds.length > 0) {
+        const metaobjectResult = await upsertPostMetaobject(post, fileIds);
+
+        // Check for errors
+        if (metaobjectResult.data?.metaobjectUpsert?.userErrors?.length > 0) {
+          console.error(
+            `  ✗ Error:`,
+            metaobjectResult.data.metaobjectUpsert.userErrors,
+          );
+        }
+      }
+      console.log(`Updated post ${post.id} successfully.`);
+    } else {
+      // Handle different post types
+      if (post.media_type === "CAROUSEL_ALBUM" && post.children?.data) {
+        // This is a carousel with multiple images/videos
+        for (let i = 0; i < post.children.data.length; i++) {
+          const child = post.children.data[i];
+          const childAlt = `instagram-post_${post.id}_${child.id}`;
+
+          // Upload the child media
+          const result = await uploadMediaFile(
+            child.media_url,
+            child.media_type,
+            childAlt,
+          );
+
+          // Get the file IDs
+          const childFileIds = (result.data?.fileCreate?.files || []).map(
+            (f: any) => f.id,
+          );
+          fileIds.push(...childFileIds);
+          uploadResults.push(result);
+        }
+      } else {
+        // This is a single image or video
+        const alt = `instagram-post_${post.id}`;
+
+        // Upload the media
         const result = await uploadMediaFile(
-          child.media_url,
-          child.media_type,
-          childAlt,
+          post.media_url,
+          post.media_type,
+          alt,
         );
 
         // Get the file IDs
-        const childFileIds = (result.data?.fileCreate?.files || []).map(
+        const singleFileIds = (result.data?.fileCreate?.files || []).map(
           (f: any) => f.id,
         );
-        fileIds.push(...childFileIds);
+        fileIds.push(...singleFileIds);
         uploadResults.push(result);
       }
-    } else {
-      // This is a single image or video
-      const alt = `instagram_post_${post.id}`;
 
-      // Upload the media
-      const result = await uploadMediaFile(
-        post.media_url,
-        post.media_type,
-        alt,
-      );
+      // Create metaobject if we have file IDs
+      if (fileIds.length > 0) {
+        const metaobjectResult = await upsertPostMetaobject(post, fileIds);
 
-      // Get the file IDs
-      const singleFileIds = (result.data?.fileCreate?.files || []).map(
-        (f: any) => f.id,
-      );
-      fileIds.push(...singleFileIds);
-      uploadResults.push(result);
-    }
-
-    // Create metaobject if we have file IDs
-    if (fileIds.length > 0) {
-      const metaobjectResult = await upsertPostMetaobject(post, fileIds);
-
-      // Check for errors
-      if (metaobjectResult.data?.metaobjectUpsert?.userErrors?.length > 0) {
-        console.error(
-          `  ✗ Error:`,
-          metaobjectResult.data.metaobjectUpsert.userErrors,
-        );
-      } else {
-        const metaobjectId =
-          metaobjectResult.data?.metaobjectUpsert?.metaobject?.id;
-        postObjectIds.push(metaobjectId);
+        // Check for errors
+        if (metaobjectResult.data?.metaobjectUpsert?.userErrors?.length > 0) {
+          console.error(
+            `  ✗ Error:`,
+            metaobjectResult.data.metaobjectUpsert.userErrors,
+          );
+        } else {
+          const metaobjectId =
+            metaobjectResult.data?.metaobjectUpsert?.metaobject?.id;
+          postObjectIds.push(metaobjectId);
+        }
       }
     }
   }
+
+  // After processing all posts, create or update the Instagram list metaobject
 
   // Create Instagram list metaobject
   if (postObjectIds.length > 0) {

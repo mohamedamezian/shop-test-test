@@ -3,12 +3,12 @@ import { authenticate } from "../shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
-  
+
   try {
     // Test creating an Instagram list with existing post IDs
     const testPostIds = [
       "gid://shopify/Metaobject/199903379747",
-      "gid://shopify/Metaobject/199903510819"
+      "gid://shopify/Metaobject/199903510819",
     ];
 
     console.log("Testing Instagram list creation with post IDs:", testPostIds);
@@ -34,12 +34,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       {
         variables: {
           metaobject: {
-            
-            type: "$app:instagram_list",
+            type: "instagram-list",
+            capabilities: {
+              publishable: {
+                status: "ACTIVE",
+              },
+            },
             fields: [
               {
-                key: "post_references",
-                value: JSON.stringify(testPostIds)
+                key: "posts",
+                value: JSON.stringify(testPostIds),
               },
               {
                 key: "data",
@@ -48,14 +52,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                   batch_id: "test-batch",
                   total_posts: testPostIds.length,
                   instagram_user_id: "test_user",
-                  uploaded_posts_count: testPostIds.length
-                })
-              }
+                  uploaded_posts_count: testPostIds.length,
+                }),
+              },
             ],
-            handle: `test-instagram-list-${Date.now()}`
-          }
-        }
-      }
+            handle: `test-instagram-list-${Date.now()}`,
+          },
+        },
+      },
     );
 
     const result = await listResponse.json();
@@ -64,14 +68,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({
       success: true,
       result: result,
-      testPostIds: testPostIds
+      testPostIds: testPostIds,
     });
-
   } catch (error) {
     console.error("Test list creation error:", error);
     return json({
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };

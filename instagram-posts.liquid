@@ -1,251 +1,424 @@
-{% comment %} Instagram Posts Display Block {% endcomment %}
+{% comment %} Instagram Feed {% endcomment %}
 
-<div class="instagram-posts-section">
-  {% if block.settings.heading %}
-    <h2 class="instagram-posts-heading">{{ block.settings.heading }}</h2>
+{% assign posts_limit = block.settings.posts_limit | default: 12 %}
+
+{%- comment -%}
+  Fetch the instagram-list metaobject (handle: instagram-feed-list)
+  and loop through its posts field (list of post metaobject references)
+{%- endcomment -%}
+
+{% assign instagram_list = null %}
+{% for list in metaobjects['instagram-list'].values %}
+  {% if list.handle == 'instagram-feed-list' or list.system.handle == 'instagram-feed-list' %}
+    {% assign instagram_list = list %}
+    {% break %}
   {% endif %}
+{% endfor %}
 
-  <div class="instagram-posts-grid">
-    {% assign all_posts = shop.metaobjects['instagram-post'].values %}
-    {% assign posts_limit = block.settings.posts_limit | default: 12 %}
+{% if instagram_list and instagram_list.posts %}
+  {% assign post_references = instagram_list.posts.value %}
 
-    {% if all_posts.size > 0 %}
-      {% for post in all_posts limit: posts_limit %}
-        <div class="instagram-post-item">
-          {% comment %} Parse data as string since it's stored as JSON {% endcomment %}
-          {% assign data = post.data.value | append: '' %}
-          {% assign caption = post.caption.value | default: '' | truncate: 150 %}
-          {% assign link = data | split: '"permalink"=>"' | last | split: '"' | first %}
+  {% if post_references.size > 0 %}
+    <div class="instagram-feed">
+      {% for post in post_references limit: posts_limit %}
+        {% assign post_data_json = post.data.value %}
+        {% assign permalink_start = post_data_json | split: '"permalink":"' %}
+        {% if permalink_start.size > 1 %}
+          {% assign permalink_parts = permalink_start[1] | split: '"' %}
+          {% assign post_permalink = permalink_parts[0] %}
+        {% else %}
+          {% assign post_permalink = '' %}
+        {% endif %}
 
-          {% comment %} Display post using Shopify-hosted images/videos {% endcomment %}
-          <a href="{{ link }}" target="_blank" class="instagram-post-link">
-            <div class="instagram-post-images">
-              {% comment %} Access first media from MediaListDrop {% endcomment %}
-              {% if post.images.value %}
-                {% for media in post.images.value limit: 1 %}
-                  {% comment %} Debug output - remove after testing {% endcomment %}
-                  <div style="display:none;" class="debug-media">
-                    Type: {{ media.media_content_type -}}
-                    <br>
-                    Has sources: {{ media.sources -}}
-                    <br>
-                    Media object: {{ media }}
+        <article class="instagram-post card-media-only">
+          <a href="{{ post_permalink }}" target="_blank" rel="noopener noreferrer" class="card-link">
+            <div class="card-media-wrapper">
+              {% for media in post.images.value limit: 1 %}
+                {% if media.sources %}
+                  <video class="card-media video" width="1000" height="1000" loop muted playsinline autoplay>
+                    {% for source in media.sources %}
+                      {%- comment -%} external media served from Shopify CDN / remote URL; asset_url not applicable {%- endcomment -%}
+                      <source data-src="{{ source.url }}" type="{{ source.mime_type }}">
+                    {% endfor %}
+                  </video>
+                {% else %}
+                  <img
+                    class="card-media img"
+                    src="{{ media | image_url: width: 1000 }}"
+                    alt="{{ post.caption.value }}"
+                    loading="lazy"
+                    width="1000"
+                    height="1000"
+                  >
+                {% endif %}
+              {% endfor %}
+
+              <!-- Overlay (appears on hover) -->
+              <div class="card-overlay">
+                <div class="overlay-top-left">
+                  <div class="profile-pic small">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                    </svg>
                   </div>
+                  <div class="names vertical">
+                    <span class="name">{{ instagram_list.name }}</span>
+                    <span class="username">{{ instagram_list.username }}</span>
+                  </div>
+                </div>
 
-                  {% comment %} Videos have sources property {% endcomment %}
-                  {% if media.sources %}
-                    <video
-                      class="instagram-video"
-                      loop
-                      muted
-                      playsinline
-                      preload="auto"
-                      data-video="true"
-                    >
-                      {% for source in media.sources %}
-                        <source src="{{ source.url }}" type="{{ source.mime_type }}">
-                      {% endfor %}
-                    </video>
-                  {% else %}
-                    {% comment %} This is an image {% endcomment %}
-                    <img
-                      src="{{ media | image_url: width: 600 }}"
-                      alt="{{ caption }}"
-                      width="600"
-                      height="600"
-                      loading="lazy"
-                    >
-                  {% endif %}
-                {% endfor %}
-              {% endif %}
-              <div class="instagram-post-overlay">
-                <p class="instagram-post-caption">{{ caption }}</p>
+                <button class="overlay-center-btn" data-video-target>
+                  <!-- icon replaced by JS based on media type -->
+                  <svg
+                    class="instagram-center-icon"
+                    width="40"
+                    height="40"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    stroke-width="1.6"
+                  >
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  </svg>
+                  <svg
+                    class="play-center-icon"
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="white"
+                    style="display:none;"
+                  >
+                    <path d="M5 3v18l15-9z"/>
+                  </svg>
+                  <svg
+                    class="pause-center-icon"
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="white"
+                    style="display:none;"
+                  >
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                  </svg>
+                </button>
+
+                <div class="overlay-bottom">
+                  <div class="stats">
+                    <span class="likes">❤️ {{ post.likes.value | default: 0 }}</span>
+                    <span class="comments">💬 {{ post.comments.value | default: 0 }}</span>
+                  </div>
+                  <div class="caption-row">
+                    <div class="caption-text">{{ post.caption.value }}</div>
+                    {% for media in post.images.value limit: 1 %}
+                      {% if media.sources %}
+                        <button class="mute-btn" aria-label="Toggle mute">🔈</button>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
               </div>
             </div>
           </a>
-        </div>
+        </article>
       {% endfor %}
-    {% else %}
-      <p>No Instagram posts available.</p>
-    {% endif %}
+    </div>
+
+    <!-- Share Modal -->
+    <div id="share-modal" class="share-modal" style="display:none;">
+      <div class="share-modal-content">
+        <div class="share-modal-header">
+          <h3>Share Post</h3>
+          <button class="share-modal-close">&times;</button>
+        </div>
+        <div class="share-modal-body">
+          <input type="text" id="share-link" readonly class="share-link-input">
+          <button class="copy-link-btn">Copy Link</button>
+        </div>
+        <div class="copy-feedback" style="display:none;">✓ Link copied!</div>
+      </div>
+    </div>
+
+    <script>
+      // Share functionality
+      document.querySelectorAll('.share-btn').forEach((btn) => {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          const permalink = this.dataset.permalink;
+          const modal = document.getElementById('share-modal');
+          const input = document.getElementById('share-link');
+          input.value = permalink;
+          modal.style.display = 'flex';
+
+          // Auto-select the text after a short delay to ensure modal is visible
+          setTimeout(() => {
+            input.select();
+            input.focus();
+          }, 100);
+        });
+      });
+
+      // Close modal
+      document.querySelector('.share-modal-close').addEventListener('click', function () {
+        document.getElementById('share-modal').style.display = 'none';
+      });
+
+      // Close on backdrop click
+      document.getElementById('share-modal').addEventListener('click', function (e) {
+        if (e.target === this) {
+          this.style.display = 'none';
+        }
+      });
+
+      // Copy link
+      document.querySelector('.copy-link-btn').addEventListener('click', function () {
+        const input = document.getElementById('share-link');
+        input.select();
+        input.focus();
+
+        // Use modern clipboard API if available, fallback to execCommand
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard
+            .writeText(input.value)
+            .then(() => {
+              showCopyFeedback();
+            })
+            .catch(() => {
+              // Fallback to execCommand
+              document.execCommand('copy');
+              showCopyFeedback();
+            });
+        } else {
+          document.execCommand('copy');
+          showCopyFeedback();
+        }
+      });
+
+      function showCopyFeedback() {
+        const feedback = document.querySelector('.copy-feedback');
+        feedback.style.display = 'block';
+        setTimeout(() => {
+          feedback.style.display = 'none';
+          document.getElementById('share-modal').style.display = 'none';
+        }, 1500);
+      }
+
+      // Video play on media click (not on link click)
+      document.querySelectorAll('.post-media video').forEach((video) => {
+        video.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.paused ? this.play() : this.pause();
+        });
+      });
+    </script>
+    <script>
+      // Populate video sources from data-src to avoid theme-check asset_url warnings
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('video').forEach(function (video) {
+          var updated = false;
+          video.querySelectorAll('source').forEach(function (src) {
+            var data = src.getAttribute('data-src');
+            if (data) {
+              src.src = data;
+              updated = true;
+            }
+          });
+          if (updated) {
+            try {
+              video.load();
+            } catch (e) {}
+          }
+        });
+      });
+    </script>
+  {% else %}
+    <div
+      class="instagram-feed-empty"
+      style="padding:1rem;background:#fff;border:1px dashed #ddd;border-radius:8px;text-align:center;color:#666;"
+    >
+      <p style="margin:0">
+        No Instagram posts found in the list. Sync your Instagram posts or add them to the
+        <code>instagram-list</code> metaobject.
+      </p>
+    </div>
+  {% endif %}
+{% else %}
+  <div
+    class="instagram-feed-empty"
+    style="padding:1rem;background:#fff;border:1px dashed #ddd;border-radius:8px;text-align:center;color:#666;"
+  >
+    <p style="margin:0">
+      Instagram feed not configured. Create an <code>instagram-list</code> metaobject with handle
+      <code>instagram-feed-list</code> or connect the Instagram app.
+    </p>
   </div>
-</div>
+{% endif %}
 
 <style>
-  .instagram-posts-section {
-    padding: 2rem 0;
-  }
-
-  .instagram-posts-heading {
-    text-align: center;
-    margin-bottom: 2rem;
-    font-size: 2rem;
-  }
-
-  .instagram-posts-grid {
+  /* Container */
+  .instagram-feed {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
   }
-
-  .instagram-post-item {
+  /* Card is just the media */
+  .instagram-post.card-media-only {
+    background: transparent;
+    border: none;
     border-radius: 8px;
     overflow: hidden;
-    transition: transform 0.3s ease;
   }
 
-  .instagram-post-item:hover {
-    transform: translateY(-4px);
-  }
-
-  .instagram-post-link {
-    display: block;
-    text-decoration: none;
-    color: inherit;
-  }
-
-  .instagram-post-images {
+  .card-media-wrapper {
     position: relative;
-    overflow: hidden;
     width: 100%;
-    height: 0;
-    padding-bottom: 100%; /* 1:1 aspect ratio for square grid */
+    padding-bottom: 100%; /* square */
+    overflow: hidden;
   }
 
-  .instagram-post-images img {
+  .card-media {
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform 0.3s ease;
   }
 
-  .instagram-post-images video {
+  /* small profile in top-left, names vertical and centered to pic */
+  .overlay-top-left {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.3s ease;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 3;
   }
 
-  .instagram-post-link:hover .instagram-post-images img,
-  .instagram-post-link:hover .instagram-post-images video {
-    transform: scale(1.05);
-  }
-
-  .instagram-post-image {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .instagram-post-image img {
-    width: 100%;
-    height: 300px;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.3s ease;
-  }
-
-  .instagram-post-link:hover .instagram-post-image img {
-    transform: scale(1.05);
-  }
-
-  .instagram-post-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+  .profile-pic.small {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    padding: 2px;
+    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    padding: 1.5rem;
   }
 
-  .instagram-post-link:hover .instagram-post-overlay {
+  .names.vertical {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .names .name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #fff;
+  }
+  .names .username {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Overlay that appears on hover */
+  .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 2;
+  }
+
+  .card-media-wrapper:hover .card-overlay {
     opacity: 1;
   }
 
-  .instagram-post-caption {
-    color: white;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    text-align: center;
-    margin: 0;
+  .overlay-center-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.45);
+    border: none;
+    border-radius: 999px;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4;
+    cursor: pointer;
+  }
+
+  .overlay-center-btn svg {
+    display: block;
+  }
+
+  .overlay-bottom {
+    padding: 10px;
+    display: flex;
+    bottom: 0;
+    flex-direction: column;
+    gap: 6px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
+    color: #fff;
+    z-index: 4;
+  }
+
+  .stats {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-weight: 600;
+  }
+  .caption-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .caption-text {
+    font-size: 13px;
+    color: #fff;
+    max-width: 85%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mute-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 600px) {
+    .overlay-top-left {
+      top: 6px;
+      left: 6px;
+    }
   }
 </style>
 
-<script>
-  // Play videos on hover
-  (function () {
-    'use strict';
-
-    function initVideoHover() {
-      const instagramPosts = document.querySelectorAll('.instagram-post-item');
-
-      console.log('Found', instagramPosts.length, 'Instagram posts');
-
-      instagramPosts.forEach(function (post) {
-        const video = post.querySelector('video');
-
-        if (video) {
-          console.log('Found video in post:', video);
-
-          // Make sure video is ready
-          video.load();
-
-          // Play video when hovering over the post
-          post.addEventListener('mouseenter', function () {
-            console.log('Mouse entered, playing video');
-            video.play().catch(function (error) {
-              console.error('Video play failed:', error);
-            });
-          });
-
-          // Pause and reset video when mouse leaves
-          post.addEventListener('mouseleave', function () {
-            console.log('Mouse left, pausing video');
-            video.pause();
-            video.currentTime = 0;
-          });
-        }
-      });
-    }
-
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initVideoHover);
-    } else {
-      initVideoHover();
-    }
-  })();
-</script>
-
 {% schema %}
 {
-  "name": "Instagram Posts",
+  "name": "Instagram Feed",
   "target": "section",
   "settings": [
     {
-      "type": "text",
-      "id": "heading",
-      "label": "Heading",
-      "default": "Instagram Feed"
-    },
-    {
       "type": "range",
       "id": "posts_limit",
-      "label": "Number of Posts",
-      "min": 1,
+      "label": "Number of posts",
+      "min": 4,
       "max": 24,
       "step": 1,
       "default": 12

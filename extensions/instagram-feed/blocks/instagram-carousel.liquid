@@ -1,117 +1,593 @@
 {% comment %} Instagram Feed {% endcomment %}
+{% assign lists = metaobjects['instagram-list']['instagram-feed-list'] %}
 
-{% assign posts_limit = block.settings.posts_limit | default: 12 %}
+<header>
+  <h2>Instagram Feed</h2>
+</header>
+<section class="instagram-feed">
+  <div class="scroll-left" role="button" aria-label="Scroll left" tabindex="0">
+    <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
+    </svg>
+  </div>
+  <div class="fade-left" aria-hidden="true"></div>
+  {% for post in lists.posts.value %}
+    <div
+      class="instagram-card"
+      data-index="{{ forloop.index0 }}"
+      data-caption="{{ post.caption.value | strip_newlines | escape }}"
+      data-likes="{{ post.likes.value }}"
+      data-comments-count="{{ post.comments.value }}"
+      data-permalink="{{ post.data.value.permalink | escape }}"
+    >
+      {% for media in post.images.value %}
+        {% if media.sources %}
+          {{ media | video_tag: autoplay: true, loop: true, muted: true, class: 'instagram-video' }}
 
-{%- comment -%}
-  Fetch the instagram-list metaobject (handle: instagram-feed-list)
-  and loop through its posts field (list of post metaobject references)
-{%- endcomment -%}
+        {% else %}
+          <img
+            class="instagram-image"
+            src="{{ media | image_url: width: 800, height: 1200, crop: 'center' }}"
+            width="320"
+            height="480"
+            alt="Instagram Post Image"
+          >
+        {% endif %}
+      {% endfor %}
+      <div class="overlay">
+        <div class="stats">
+          <span class="likes">
+            {{ post.likes.value }}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              version="1.1"
+              width="20"
+              height="20"
+              viewBox="0 0 256 256"
+              xml:space="preserve"
+            >
+              <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+              	<path d="M 7.486 13.502 c 9.982 -9.982 26.165 -9.982 36.147 0 L 45 14.869 l 0 0 c 6.895 22.882 6.259 47.092 0 72.294 L 26.927 69.089 c 0 0 0 0 0 0 l -19.44 -19.44 C -2.495 39.667 -2.495 23.484 7.486 13.502 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgba(255, 255, 255, 1); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+              	<path d="M 82.514 13.502 c -9.982 -9.982 -26.165 -9.982 -36.147 0 L 45 14.869 l 0 0 v 72.294 l 18.073 -18.073 c 0 0 0 0 0 0 l 19.44 -19.44 C 92.495 39.667 92.495 23.484 82.514 13.502 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgba(255, 255, 255, 1); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+              </g>
+            </svg>
+          </span>
+          <span class="comments">
+            {{ post.comments.value }}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              version="1.1"
+              width="20"
+              height="20"
+              viewBox="0 0 256 256"
+              xml:space="preserve"
+            >
+              <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+              	<path d="M 86.999 90 c -0.367 0 -0.737 -0.067 -1.092 -0.206 l -17.016 -6.655 C 61.734 87.633 53.509 90 45 90 C 20.187 90 0 69.813 0 45 C 0 20.187 20.187 0 45 0 c 24.813 0 45 20.187 45 45 c 0 8.509 -2.367 16.734 -6.861 23.892 l 6.655 17.016 c 0.434 1.11 0.17 2.371 -0.673 3.214 C 88.548 89.694 87.78 90 86.999 90 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+              </g>
+            </svg>
+          </span>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  <div class="scroll-right" role="button" aria-label="Scroll right" tabindex="0">
+    <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+    </svg>
+  </div>
+  <div class="fade-right" aria-hidden="true"></div>
+</section>
+<footer>
+  <h4>@{{ lists.username }}</h4>
+</footer>
 
-{% assign instagram_list = null %}
-{% for list in metaobjects['instagram-list'].values %}
-  {% if list.handle == 'instagram-feed-list' or list.system.handle == 'instagram-feed-list' %}
-    {% assign instagram_list = list %}
-    {% break %}
-  {% endif %}
-{% endfor %}
-
-{% if instagram_list and instagram_list.posts %}
-  {% assign post_references = instagram_list.posts.value %}
-
-  {% if post_references.size > 0 %}
-    <div class="instagram-feed">
-      {% for post in post_references limit: posts_limit %}
-        <div class="instagram-post">
-          <div class="post-media">
-            {% for media in post.images.value limit: 1 %}
-              {% if media.sources %}
-                <video loop muted playsinline>
-                  {% for source in media.sources %}
-                    <source src="{{ source.url }}" type="{{ source.mime_type }}">
-                  {% endfor %}
-                </video>
-              {% else %}
-                <img
-                  src="{{ media | image_url: width: 1000 }}"
-                  alt="{{ post.caption.value }}"
-                  width="1000"
-                  height="1000"
-                  loading="lazy"
-                >
-              {% endif %}
-            {% endfor %}
+<div class="modal" aria-hidden="true">
+  <div class="modal-content">
+    <button class="close-button" aria-label="Close">&times;</button>
+    <div class="modal-inner">
+      <div class="media-column" aria-live="polite"></div>
+      <div class="details-column">
+        <header class="details-header">
+          <div class="profile">
+            <div class="avatar" aria-hidden="true"></div>
+            <div class="profile-info">
+              <strong class="username">@example</strong>
+              <div class="meta">Posted • <time class="post-time">Now</time></div>
+            </div>
           </div>
-          <div class="post-info">
-            <p>{{ post.caption.value | truncate: 100 }}</p>
-            <span>❤️ {{ post.likes.value }}</span>
-            <span>💬 {{ post.comments.value }}</span>
+        </header>
+
+        <div class="post-body">
+          <div class="post-caption"></div>
+          <div class="post-stats">
+            <span class="likes-count"></span>
           </div>
         </div>
-      {% endfor %}
+
+        <section class="comments-section">
+          <h4>Comments</h4>
+          <ul class="comments-list" aria-live="polite"></ul>
+          <div class="add-comment">
+            <input type="text" class="comment-input" placeholder="Add a comment..." aria-label="Add a comment">
+            <button class="comment-post" aria-label="Post comment">Post</button>
+          </div>
+        </section>
+      </div>
     </div>
-  {% else %}
-    <div
-      class="instagram-feed-empty"
-      style="padding:1rem;background:#fff;border:1px dashed #ddd;border-radius:8px;text-align:center;color:#666;"
-    >
-      <p style="margin:0">
-        No Instagram posts found in the list. Sync your Instagram posts or add them to the
-        <code>instagram-list</code> metaobject.
-      </p>
-    </div>
-  {% endif %}
-{% else %}
-  <div
-    class="instagram-feed-empty"
-    style="padding:1rem;background:#fff;border:1px dashed #ddd;border-radius:8px;text-align:center;color:#666;"
-  >
-    <p style="margin:0">
-      Instagram feed not configured. Create an <code>instagram-list</code> metaobject with handle
-      <code>instagram-feed-list</code> or connect the Instagram app.
-    </p>
   </div>
-{% endif %}
+</div>
+
+<script>
+  function modal() {
+    const modal = document.querySelector('.modal');
+    const span = document.querySelector('.close-button');
+    const cards = document.querySelectorAll('.instagram-card');
+    cards.forEach((card) => {
+      card.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        modal.style.display = 'block';
+      });
+    });
+    window.onclick = function (event) {
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    };
+    span.onclick = function () {
+      modal.style.display = 'none';
+    };
+  }
+  modal();
+
+  // video click to toggle play/pause
+  document.querySelectorAll('.instagram-video').forEach((video) => {
+    video.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.paused ? this.play() : this.pause();
+    });
+  });
+
+  // modal behavior: populate with clicked post and show sample comments
+  (function () {
+    const modal = document.querySelector('.modal');
+    const modalInner = modal && modal.querySelector('.modal-inner');
+    const mediaCol = modal && modal.querySelector('.media-column');
+    const captionEl = modal && modal.querySelector('.post-caption');
+    const likesEl = modal && modal.querySelector('.likes-count');
+    const commentsList = modal && modal.querySelector('.comments-list');
+    const commentInput = modal && modal.querySelector('.comment-input');
+    const commentPost = modal && modal.querySelector('.comment-post');
+    const closeBtn = modal && modal.querySelector('.close-button');
+
+    if (!modal || !modalInner) return;
+
+    // template comments to display
+    const sampleComments = [
+      { user: 'alice', text: 'Nice shot! 📸' },
+      { user: 'bob', text: 'Love this place.' },
+      { user: 'charlie', text: '🔥🔥🔥' },
+    ];
+
+    function renderComments(list, comments) {
+      list.innerHTML = '';
+      comments.forEach((c) => {
+        const li = document.createElement('li');
+        li.className = 'comment-item';
+        li.innerHTML = `<strong>@${c.user}</strong> <span class="c-text">${c.text}</span>`;
+        list.appendChild(li);
+      });
+    }
+
+    function openModalFromCard(card) {
+      const caption = card.getAttribute('data-caption') || '';
+      const likes = card.getAttribute('data-likes') || '0';
+      const permalink = card.getAttribute('data-permalink') || '';
+
+      // media - clone the media element inside the card and move into mediaCol
+      mediaCol.innerHTML = '';
+      const mediaInCard = card.querySelector('img, video');
+      if (mediaInCard) {
+        const clone = mediaInCard.cloneNode(true);
+        clone.classList.add('modal-media');
+        clone.removeAttribute('id');
+        if (clone.tagName === 'VIDEO') {
+          clone.controls = true;
+          clone.autoplay = false;
+          clone.muted = false;
+        }
+        mediaCol.appendChild(clone);
+      }
+
+      captionEl.textContent = caption;
+      likesEl.textContent = `${likes} likes`;
+
+      renderComments(commentsList, sampleComments);
+
+      // show
+      modal.style.display = 'block';
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      commentInput && commentInput.focus();
+    }
+
+    // wire card clicks (open modal)
+    document.querySelectorAll('.instagram-card').forEach((card) => {
+      card.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openModalFromCard(card);
+      });
+    });
+
+    function closeModal() {
+      modal.style.display = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    closeBtn && closeBtn.addEventListener('click', closeModal);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // posting a fake comment
+    commentPost &&
+      commentPost.addEventListener('click', () => {
+        const text = ((commentInput && commentInput.value) || '').trim();
+        if (!text) return;
+        sampleComments.unshift({ user: 'you', text });
+        renderComments(commentsList, sampleComments);
+        commentInput.value = '';
+      });
+  })();
+
+  // scroll controls: click or Enter/Space to scroll the feed by one card
+  (function () {
+    const leftBtns = document.querySelectorAll('.scroll-left');
+    const rightBtns = document.querySelectorAll('.scroll-right');
+
+    function cardScrollAmount(container) {
+      const card = container.querySelector('.instagram-card');
+      if (!card) return Math.round(container.clientWidth * 0.6);
+      const gap = parseFloat(getComputedStyle(container).gap || 16);
+      return Math.round(card.offsetWidth + gap);
+    }
+
+    function attach(btns, dir) {
+      btns.forEach((btn) => {
+        const container = btn.closest('.instagram-feed');
+        if (!container) return;
+        btn.addEventListener('click', () => {
+          container.scrollBy({ left: dir * cardScrollAmount(container), behavior: 'smooth' });
+        });
+        btn.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            btn.click();
+          }
+        });
+      });
+    }
+
+    attach(leftBtns, -1);
+    attach(rightBtns, 1);
+
+    // show/hide arrows and fades based on overflow and scroll position
+    function refreshHints() {
+      const containers = document.querySelectorAll('.instagram-feed');
+      containers.forEach((container) => {
+        const left = container.querySelector('.scroll-left');
+        const right = container.querySelector('.scroll-right');
+        const fadeL = container.querySelector('.fade-left');
+        const fadeR = container.querySelector('.fade-right');
+        if (!left || !right) return;
+        const canScroll = container.scrollWidth > container.clientWidth + 1;
+        if (!canScroll) {
+          left.style.display = 'none';
+          right.style.display = 'none';
+          fadeL && fadeL.classList.remove('fade-visible');
+          fadeR && fadeR.classList.remove('fade-visible');
+          return;
+        }
+        // otherwise show arrows (unless on small screens CSS hides them)
+        left.style.display = '';
+        right.style.display = '';
+        const scrollLeft = container.scrollLeft;
+        const maxScroll = container.scrollWidth - container.clientWidth - 1;
+        if (fadeL) fadeL.classList.toggle('fade-visible', scrollLeft > 8);
+        if (fadeR) fadeR.classList.toggle('fade-visible', scrollLeft < maxScroll - 8);
+      });
+    }
+
+    // attach events
+    window.addEventListener('resize', refreshHints);
+    document
+      .querySelectorAll('.instagram-feed')
+      .forEach((c) => c.addEventListener('scroll', refreshHints, { passive: true }));
+    // initial call
+    setTimeout(refreshHints, 120);
+  })();
+</script>
 
 <style>
+  header {
+  }
+
   .instagram-feed {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+    gap: 2em;
+  }
+  .instagram-feed::-webkit-scrollbar {
+    /* WebKit */
+    width: 0;
+    height: 0;
   }
 
-  .instagram-post {
-    background: #fff;
-    border-radius: 8px;
-    overflow: hidden;
-    flex: 1 1 calc(25% - 1.5rem);
-    min-width: 250px;
-  }
-
-  .post-media {
+  .instagram-card {
     position: relative;
-    padding-bottom: 100%;
-    background: #000;
+    flex: 0 0 auto;
+    aspect-ratio: 4 / 6;
+    cursor: pointer;
   }
-
-  .post-media img,
-  .post-media video {
+  .overlay {
     position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
+    opacity: 0;
+    background: rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+    transition: opacity 240ms ease, transform 240ms ease;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .instagram-card:hover .overlay {
+    opacity: 1;
+  }
+
+  .stats {
+    display: inline-flex;
+    gap: 0.6rem;
+    align-items: center;
+    font-size: 0.95rem;
+    color: #fff;
+  }
+  .likes,
+  .comments {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    color: white;
+  }
+
+  .caption {
+    color: #fff;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  /* allow overlay children to be interactive while the overlay itself stays non-blocking */
+  .overlay > * {
+    pointer-events: auto;
+  }
+
+  /* media inside card */
+  .instagram-image,
+  .instagram-video {
+    width: 320px;
+    height: 100%;
     object-fit: cover;
+    border-radius: 24px;
+    display: block;
+    background: #111;
   }
 
-  .post-info {
-    padding: 1rem;
+  /* scroll button visuals */
+  .scroll-left,
+  .scroll-right {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  }
+  .scroll-left {
+    left: 8px;
+  }
+  .scroll-right {
+    right: 8px;
   }
 
-  @media (max-width: 768px) {
-    .instagram-post {
-      flex: 1 1 calc(50% - 1.5rem);
+  .arrow-icon {
+    width: 18px;
+    height: 18px;
+    fill: #fff;
+  }
+
+  /* hide on small screens where touch scrolling is primary */
+  @media (max-width: 680px) {
+    .scroll-left,
+    .scroll-right {
+      display: none;
     }
+  }
+
+  /* arrow hover animation */
+  .scroll-left:hover,
+  .scroll-right:hover {
+    transform: translateY(-50%) scale(1.03);
+  }
+
+  /* fade hints at edges */
+  .fade-left,
+  .fade-right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3.5rem;
+    pointer-events: none;
+    z-index: 5;
+    transition: opacity 180ms ease;
+    opacity: 0;
+  }
+  .fade-left {
+    left: 0;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+  }
+  .fade-right {
+    right: 0;
+    background: linear-gradient(270deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+  }
+
+  .fade-visible {
+    opacity: 1;
+  }
+
+  .modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0, 0, 0); /* Fallback color */
+    background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; /* centered */
+    padding: 0;
+    border: 0;
+    width: min(1100px, 96%);
+    border-radius: 8px;
+    overflow: hidden;
+    display: block;
+  }
+  .modal-inner {
+    display: flex;
+    gap: 0;
+  }
+  .media-column {
+    flex: 1 1 60%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .details-column {
+    flex: 1 1 40%;
+    background: #fff;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-media {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .close-button {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 30;
+    background: rgba(255, 255, 255, 0.9);
+    border: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    font-size: 18px;
+  }
+  .close-button:hover {
+    background: rgba(255, 255, 255, 1);
+  }
+
+  .details-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 8px;
+  }
+  .avatar {
+    width: 40px;
+    height: 40px;
+    background: #ddd;
+    border-radius: 50%;
+  }
+  .profile-info .username {
+    display: block;
+  }
+  .post-caption {
+    margin: 8px 0;
+  }
+  .post-stats {
+    margin: 8px 0;
+    color: #333;
+  }
+
+  .comments-section {
+    margin-top: 8px;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .comments-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    max-height: 240px;
+  }
+  .comment-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .add-comment {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .comment-input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+  }
+  .comment-post {
+    padding: 8px 12px;
+    border: 0;
+    background: #0070f3;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
   }
 </style>
 

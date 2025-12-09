@@ -320,8 +320,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           Comments: field(key: "comments"){
             value
           },
-
-
         }
         userErrors {
           field
@@ -360,6 +358,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         caption: post.caption,
         likes: post.like_count,
         comments: post.comments_count,
+        username: post.username,
       },
       response: data,
       success: !data.data?.metaobjectUpsert?.userErrors?.length,
@@ -390,7 +389,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           },
           Posts: field(key: "posts"){
             value
-          }
+          },
+          Username: field(key: "username" ){
+            value
+          },
+          Name: field(key: "name"){
+            value
+          },
         }
         userErrors {
           field
@@ -410,6 +415,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           fields: [
             { key: "data", value: JSON.stringify(igData) },
             { key: "posts", value: JSON.stringify(postObjectIds) },
+            {
+              key: "username",
+              value: username || "instagram_user",
+            },
+            {
+              key: "name",
+              value: displayName || "Instagram User",
+            },
           ],
         },
       },
@@ -492,9 +505,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // Fetch posts from Instagram API
   const igResponse = await fetch(
-    `https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url,view_count,like_count,username,comments_count,permalink,caption,timestamp,children{media_url,media_type,thumbnail_url}&access_token=${account.accessToken}`,
+    `https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url,view_count,like_count,comments_count,permalink,caption,timestamp,children{media_url,media_type,thumbnail_url}&access_token=${account.accessToken}`,
   );
   const igData = await igResponse.json();
+
+  const igUserResponse = await fetch(
+    `https://graph.instagram.com/me/?fields=followers_count,name,username&access_token=${account.accessToken}`,
+  );
+  const userData = await igUserResponse.json();
+
   const posts = igData.data as InstagramPost[];
 
   addLog("fetchInstagramPosts", {
@@ -515,6 +534,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const uploadResults = [];
   const postObjectIds = [];
   let existingCount = 0;
+  let username = userData.username;
+  let displayName = userData.name;
 
   // Loop through each Instagram post
   for (const post of posts) {
@@ -669,11 +690,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   return {
     success: true,
-    posts,
-    postsProcessed: posts.length,
-    postsUploaded: postObjectIds.length,
-    uploadResults,
-    postObjectIds,
-    logFile: `logs/instagram-sync-${timestamp}.json`,
+    username,
+    displayName,
+    // posts,
+    // postsProcessed: posts.length,
+    // postsUploaded: postObjectIds.length,
+    // uploadResults,
+    // postObjectIds,
+    // logFile: `logs/instagram-sync-${timestamp}.json`,
   };
 };

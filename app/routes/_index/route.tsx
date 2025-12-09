@@ -196,6 +196,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
                 ],
                 required: true,
               },
+              {
+                key: "username",
+                name: "Username",
+                type: "single_line_text_field",
+                required: true,
+              },
+              {
+                key: "name",
+                name: "displayName",
+                type: "single_line_text_field",
+                required: true,
+              },
             ],
           },
         },

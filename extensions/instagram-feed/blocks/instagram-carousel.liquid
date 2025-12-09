@@ -187,12 +187,21 @@
     let nextPostBtn = null;
     let postCounter = null;
 
-    function showCurrentPost() {
+    function showCurrentPost(direction = 0) {
       const allPosts = modal.querySelectorAll('.modal-post');
-      allPosts.forEach((post, index) => {
-        post.style.display = index === currentPostIndex ? 'block' : 'none';
+      
+      // FIRST: Instantly hide all posts and reset their state
+      allPosts.forEach((post) => {
+        post.style.transition = 'none';
+        post.style.display = 'none';
+        post.style.transform = 'none';
+        post.style.opacity = '0';
       });
+
+      // SECOND: Get the current post and prepare it
       currentPost = allPosts[currentPostIndex];
+      if (!currentPost) return;
+
       currentImageIndex = 0;
 
       // Get navigation buttons for current post
@@ -203,20 +212,75 @@
       nextPostBtn = currentPost.querySelector('.footer-nav-next');
       postCounter = currentPost.querySelector('.post-counter');
 
+      // Show the post
+      currentPost.style.display = 'block';
+
+      if (direction !== 0) {
+        // Set starting position for animation
+        currentPost.style.transform = `translateX(${direction > 0 ? '8%' : '-8%'})`;
+        currentPost.style.opacity = '0';
+        
+        // Force browser to apply these styles
+        void currentPost.offsetHeight;
+        
+        // Animate to final position
+        requestAnimationFrame(() => {
+          currentPost.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+          currentPost.style.transform = 'none';
+          currentPost.style.opacity = '1';
+        });
+      } else {
+        // No animation - just show immediately
+        currentPost.style.transform = 'none';
+        currentPost.style.opacity = '1';
+      }
+
       showCurrentImage();
       updateNavButtons();
     }
 
-    function showCurrentImage() {
+    function showCurrentImage(direction = 0) {
       if (!currentPost) return;
 
       const slides = currentPost.querySelectorAll('.modal-slide');
       const dots = currentPost.querySelectorAll('.indicator-dot');
 
-      slides.forEach((slide, index) => {
-        slide.style.display = index === currentImageIndex ? 'block' : 'none';
+      // FIRST: Instantly hide all slides and reset their state
+      slides.forEach((slide) => {
+        slide.style.transition = 'none';
+        slide.style.display = 'none';
+        slide.style.transform = 'none';
+        slide.style.opacity = '0';
       });
 
+      // SECOND: Get the current slide and prepare it
+      const currentSlide = slides[currentImageIndex];
+      if (!currentSlide) return;
+
+      // Show the slide
+      currentSlide.style.display = 'block';
+
+      if (direction !== 0) {
+        // Set starting position for animation
+        currentSlide.style.transform = `translateX(${direction > 0 ? '8%' : '-8%'})`;
+        currentSlide.style.opacity = '0';
+        
+        // Force browser to apply these styles
+        void currentSlide.offsetHeight;
+        
+        // Animate to final position
+        requestAnimationFrame(() => {
+          currentSlide.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+          currentSlide.style.transform = 'none';
+          currentSlide.style.opacity = '1';
+        });
+      } else {
+        // No animation - just show immediately
+        currentSlide.style.transform = 'none';
+        currentSlide.style.opacity = '1';
+      }
+
+      // Update dots
       dots.forEach((dot, index) => {
         dot.classList.toggle('active', index === currentImageIndex);
       });
@@ -280,7 +344,7 @@
       if (target && currentImageIndex > 0) {
         e.stopPropagation();
         currentImageIndex--;
-        showCurrentImage();
+        showCurrentImage(1); // direction: 1 = right
         updateNavButtons();
         return;
       }
@@ -292,7 +356,7 @@
         const slides = currentPost.querySelectorAll('.modal-slide');
         if (currentImageIndex < slides.length - 1) {
           currentImageIndex++;
-          showCurrentImage();
+          showCurrentImage(-1); // direction: -1 = left
           updateNavButtons();
         }
         return;
@@ -304,7 +368,7 @@
         e.stopPropagation();
         if (currentPostIndex > 0) {
           currentPostIndex--;
-          showCurrentPost();
+          showCurrentPost(1); // direction: 1 = right (previous)
         }
         return;
       }
@@ -316,7 +380,7 @@
         const allPosts = modal.querySelectorAll('.modal-post');
         if (currentPostIndex < allPosts.length - 1) {
           currentPostIndex++;
-          showCurrentPost();
+          showCurrentPost(-1); // direction: -1 = left (next)
         }
         return;
       }
@@ -332,17 +396,173 @@
         closeModal();
       } else if (e.key === 'ArrowLeft' && currentImageIndex > 0) {
         currentImageIndex--;
-        showCurrentImage();
+        showCurrentImage(1);
         updateNavButtons();
       } else if (e.key === 'ArrowRight') {
         const slides = currentPost.querySelectorAll('.modal-slide');
         if (currentImageIndex < slides.length - 1) {
           currentImageIndex++;
-          showCurrentImage();
+          showCurrentImage(-1);
           updateNavButtons();
         }
       }
     });
+
+    // Add swipe/drag functionality to modal images
+    let isDragging = false;
+    let dragStartX = 0;
+
+    modal.addEventListener('mousedown', (e) => {
+      // Only start drag on the image container
+      if (!e.target.closest('.modal-images-container')) return;
+      // Don't interfere with buttons
+      if (e.target.closest('.close-button, .modal-nav')) return;
+
+      isDragging = true;
+      dragStartX = e.pageX;
+      let hasMoved = false;
+      const currentSlide = currentPost.querySelector('.modal-slide[style*="display: block"]');
+
+      // Remove transitions during drag for immediate feedback
+      if (currentSlide) {
+        currentSlide.style.transition = 'none';
+      }
+
+      const handleMouseMove = (moveEvent) => {
+        if (!isDragging) return;
+        const diff = moveEvent.pageX - dragStartX;
+
+        if (Math.abs(diff) > 10) {
+          hasMoved = true;
+          // Add visual feedback during drag with reduced movement
+          if (currentSlide) {
+            const translateAmount = diff * 0.3; // Reduced from 0.5 for subtler feedback
+            const opacityValue = Math.max(0.6, 1 - Math.abs(diff) / 800); // More subtle fade
+            currentSlide.style.transform = `translateX(${translateAmount}px)`;
+            currentSlide.style.opacity = `${opacityValue}`;
+          }
+        }
+      };
+
+      const handleMouseUp = (upEvent) => {
+        isDragging = false;
+        const diff = upEvent.pageX - dragStartX;
+
+        // Determine if we're navigating
+        const shouldNavigate = hasMoved && Math.abs(diff) > 50;
+
+        if (!shouldNavigate) {
+          // Just reset if no navigation
+          if (currentSlide) {
+            currentSlide.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+            currentSlide.style.transform = 'translateX(0)';
+            currentSlide.style.opacity = '1';
+          }
+        } else {
+          const allPosts = modal.querySelectorAll('.modal-post');
+          const slides = currentPost.querySelectorAll('.modal-slide');
+
+          if (diff > 0) {
+            // Swipe right (go to previous)
+            if (currentImageIndex > 0) {
+              currentImageIndex--;
+              showCurrentImage(1);
+              updateNavButtons();
+            } else if (currentPostIndex > 0) {
+              // Go to previous post
+              currentPostIndex--;
+              showCurrentPost(1); // direction: 1 = right (previous)
+            } else {
+              // Can't go back further, reset
+              if (currentSlide) {
+                currentSlide.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+                currentSlide.style.transform = 'translateX(0)';
+                currentSlide.style.opacity = '1';
+              }
+            }
+          } else {
+            // Swipe left (go to next)
+            if (currentImageIndex < slides.length - 1) {
+              currentImageIndex++;
+              showCurrentImage(-1);
+              updateNavButtons();
+            } else if (currentPostIndex < allPosts.length - 1) {
+              // Go to next post
+              currentPostIndex++;
+              showCurrentPost(-1); // direction: -1 = left (next)
+            } else {
+              // Can't go forward further, reset
+              if (currentSlide) {
+                currentSlide.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+                currentSlide.style.transform = 'translateX(0)';
+                currentSlide.style.opacity = '1';
+              }
+            }
+          }
+        }
+
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    });
+
+    // Add touch swipe support for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    modal.addEventListener(
+      'touchstart',
+      (e) => {
+        if (!e.target.closest('.modal-images-container')) return;
+        if (e.target.closest('.close-button, .modal-nav')) return;
+        touchStartX = e.changedTouches[0].screenX;
+      },
+      { passive: true }
+    );
+
+    modal.addEventListener(
+      'touchend',
+      (e) => {
+        if (!e.target.closest('.modal-images-container')) return;
+        if (e.target.closest('.close-button, .modal-nav')) return;
+
+        touchEndX = e.changedTouches[0].screenX;
+        const diff = touchEndX - touchStartX;
+
+        if (Math.abs(diff) > 50) {
+          const allPosts = modal.querySelectorAll('.modal-post');
+          const slides = currentPost.querySelectorAll('.modal-slide');
+
+          if (diff > 0) {
+            // Swipe right (go to previous)
+            if (currentImageIndex > 0) {
+              currentImageIndex--;
+              showCurrentImage(1);
+              updateNavButtons();
+            } else if (currentPostIndex > 0) {
+              // Go to previous post
+              currentPostIndex--;
+              showCurrentPost(1); // direction: 1 = right (previous)
+            }
+          } else {
+            // Swipe left (go to next)
+            if (currentImageIndex < slides.length - 1) {
+              currentImageIndex++;
+              showCurrentImage(-1);
+              updateNavButtons();
+            } else if (currentPostIndex < allPosts.length - 1) {
+              // Go to next post
+              currentPostIndex++;
+              showCurrentPost(-1); // direction: -1 = left (next)
+            }
+          }
+        }
+      },
+      { passive: true }
+    );
   })();
 
   // video click to toggle play/pause
@@ -385,6 +605,68 @@
     attach(leftBtns, -1);
     attach(rightBtns, 1);
 
+    // Add swipe/drag functionality to feed
+    document.querySelectorAll('.instagram-feed').forEach((container) => {
+      let isDown = false;
+      let startX;
+      let scrollLeft;
+      let hasMoved = false;
+
+      container.addEventListener('mousedown', (e) => {
+        // Don't interfere with button clicks
+        if (e.target.closest('.scroll-left, .scroll-right')) return;
+
+        isDown = true;
+        hasMoved = false;
+        container.style.cursor = 'grabbing';
+        container.style.userSelect = 'none';
+        startX = e.pageX - container.offsetLeft;
+        scrollLeft = container.scrollLeft;
+
+        // Prevent default drag behavior on images
+        e.preventDefault();
+      });
+
+      container.addEventListener('mouseleave', () => {
+        isDown = false;
+        container.style.cursor = 'grab';
+        container.style.userSelect = '';
+      });
+
+      container.addEventListener('mouseup', () => {
+        isDown = false;
+        container.style.cursor = 'grab';
+        container.style.userSelect = '';
+      });
+
+      container.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const walk = (x - startX) * 1; // Reduced scroll speed for smoother control
+
+        // If moved more than 5 pixels, it's a drag not a click
+        if (Math.abs(walk) > 5) {
+          hasMoved = true;
+        }
+
+        container.scrollLeft = scrollLeft - walk;
+      });
+
+      // Prevent card click if user was dragging
+      container.addEventListener(
+        'click',
+        (e) => {
+          if (hasMoved) {
+            e.preventDefault();
+            e.stopPropagation();
+            hasMoved = false;
+          }
+        },
+        true
+      );
+    });
+
     // show/hide arrows and fades based on overflow and scroll position
     function refreshHints() {
       const containers = document.querySelectorAll('.instagram-feed');
@@ -402,11 +684,16 @@
           fadeR && fadeR.classList.remove('fade-visible');
           return;
         }
-        // otherwise show arrows (unless on small screens CSS hides them)
-        left.style.display = '';
-        right.style.display = '';
+        // Show/hide arrows based on scroll position
         const scrollLeft = container.scrollLeft;
         const maxScroll = container.scrollWidth - container.clientWidth - 1;
+
+        // Hide left arrow if at the start
+        left.style.display = scrollLeft <= 1 ? 'none' : '';
+
+        // Hide right arrow if at the end
+        right.style.display = scrollLeft >= maxScroll - 1 ? 'none' : '';
+
         if (fadeL) fadeL.classList.toggle('fade-visible', scrollLeft > 8);
         if (fadeR) fadeR.classList.toggle('fade-visible', scrollLeft < maxScroll - 8);
       });
@@ -433,6 +720,8 @@
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* Internet Explorer 10+ */
     gap: 2em;
+    cursor: grab;
+    -webkit-overflow-scrolling: touch;
   }
   .instagram-feed::-webkit-scrollbar {
     /* WebKit */
@@ -505,6 +794,9 @@
     border-radius: 24px;
     display: block;
     background: #111;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
   }
 
   /* scroll button visuals */
@@ -635,6 +927,7 @@
 
   .modal-slide {
     display: none;
+    opacity: 0;
   }
 
   .modal-media {
@@ -644,6 +937,9 @@
     height: auto;
     object-fit: contain;
     display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
   }
 
   /* Ensure videos match image sizing */
@@ -653,6 +949,9 @@
     width: auto;
     height: auto;
     object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: auto; /* Allow video controls */
   }
 
   .close-button {
@@ -721,11 +1020,12 @@
     height: 8px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.5);
-    transition: background 0.3s;
+    transition: background 0.2s ease, transform 0.2s ease;
   }
 
   .indicator-dot.active {
     background: rgba(255, 255, 255, 1);
+    transform: scale(1.15);
   }
 
   /* Details box below image */

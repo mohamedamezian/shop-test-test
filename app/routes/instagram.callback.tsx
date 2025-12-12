@@ -42,20 +42,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (!data.access_token) {
       return new Response(
         `Failed to get Instagram token: ${JSON.stringify(data, null, 2)}`,
-        { status: 400, headers: { "Content-Type": "text/plain" } }
+        { status: 400, headers: { "Content-Type": "text/plain" } },
       );
     }
 
     // Exchange short-lived token for long-lived token (60 days)
     const longLivedTokenUrl = `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_APP_SECRET}&access_token=${data.access_token}`;
-    
+
     const longLivedRes = await fetch(longLivedTokenUrl, { method: "GET" });
     const longLivedData = await longLivedRes.json();
 
     // Use the long-lived token if successful, otherwise fall back to short-lived
     const finalToken = longLivedData.access_token || data.access_token;
     const tokenType = longLivedData.access_token ? "long-lived" : "short-lived";
-    const expiresAt = longLivedData.expires_in 
+    const expiresAt = longLivedData.expires_in
       ? new Date(Date.now() + longLivedData.expires_in * 1000)
       : new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // 60 days default
 
@@ -65,8 +65,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         where: {
           shop_provider: {
             shop: shop,
-            provider: "instagram"
-          }
+            provider: "instagram",
+          },
         },
         update: {
           accessToken: finalToken,
@@ -81,9 +81,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           expiresAt: expiresAt,
         },
       });
-      
+
       // Create HTML success page that redirects back to Shopify
-      const shopSlug = shop.replace('.myshopify.com', '');
+      const shopSlug = shop.replace(".myshopify.com", "");
       const successHtml = `
         <!DOCTYPE html>
         <html>
@@ -116,24 +116,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         </body>
         </html>
       `;
-      
+
       return new Response(successHtml, {
         status: 200,
-        headers: { "Content-Type": "text/html" }
+        headers: { "Content-Type": "text/html" },
       });
     } catch (dbError) {
       console.error("Database error:", dbError);
       return new Response(
-        `Database error: ${dbError instanceof Error ? dbError.message : 'Unknown error'}\n\nInstagram data received: ${JSON.stringify(data, null, 2)}`,
-        { status: 500, headers: { "Content-Type": "text/plain" } }
+        `Database error: ${dbError instanceof Error ? dbError.message : "Unknown error"}\n\nInstagram data received: ${JSON.stringify(data, null, 2)}`,
+        { status: 500, headers: { "Content-Type": "text/plain" } },
       );
     }
-
   } catch (error) {
     console.error("General error:", error);
     return new Response(
-      `Server error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      { status: 500 }
+      `Server error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      { status: 500 },
     );
   }
 };

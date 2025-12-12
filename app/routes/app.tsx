@@ -25,27 +25,6 @@ export default function App() {
         <Link to="/app" aria-label="Home">
           Home
         </Link>
-        <Link to="/app/social-status" aria-label="Social Status">
-          Social Status
-        </Link>
-        <Link to="/app/instagram-test" aria-label="Instagram Test">
-          Instagram Test
-        </Link>
-        <Link to="/app/instagram-tester" aria-label="Instagram Tester">
-          Instagram Tester
-        </Link>
-        <Link to="/app/auth-test" aria-label="Authentication Test">
-          Authentication Test
-        </Link>
-        <Link to="/app/debug" aria-label="Debug">
-          Debug
-        </Link>
-        <Link
-          to="/api/delete-instagram-data"
-          aria-label="Delete Instagram Data"
-        >
-          Delete data
-        </Link>
       </s-app-nav>
 
       <Outlet />

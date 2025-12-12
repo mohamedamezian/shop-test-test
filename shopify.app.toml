@@ -24,4 +24,9 @@ uri = "/webhooks/app/uninstalled"
 scopes = "write_metaobject_definitions,write_metaobjects,write_products, write_files, write_themes, read_metaobjects"
 
 [auth]
-redirect_urls = ["https://shop-test-test.vercel.app/instagram/callback"]
+redirect_urls = [
+    "https://shop-test-test.vercel.app/auth/callback",
+    "https://shop-test-test.vercel.app/auth/shopify/callback",
+    "https://shop-test-test.vercel.app/api/auth/callback",
+    "https://shop-test-test.vercel.app/instagram/callback",
+]

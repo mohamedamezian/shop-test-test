@@ -1,5 +1,5 @@
 {
-  "name": "ig-test-test-test",
+  "name": "nn-instagram",
   "private": true,
   "scripts": {
     "build": "prisma generate && remix vite:build",

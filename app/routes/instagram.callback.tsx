@@ -108,9 +108,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           <div class="redirect-info">
             Redirecting back to your Shopify app in 3 seconds...
           </div>
-          <script>
+            <script>
             setTimeout(() => {
-              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/ig-devtools/app/social-status';
+              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/nn-instagram/app/social-status';
             }, 3000);
           </script>
         </body>

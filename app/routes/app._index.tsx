@@ -898,6 +898,40 @@ export default function Index() {
                       code. Here are real examples from this app:
                     </Text>
 
+                    {/* Minimal example: no divs/styling, just assign + loops */}
+                    <BlockStack gap="200">
+                      <Text as="p" variant="headingSm">
+                        Minimal copy-paste example
+                      </Text>
+                      <Box
+                        padding="400"
+                        background="bg-surface-secondary"
+                        borderRadius="200"
+                      >
+                        <pre
+                          style={{
+                            fontSize: "12px",
+                            lineHeight: "1.5",
+                            overflow: "auto",
+                            margin: 0,
+                            fontFamily: "monospace",
+                          }}
+                        >
+                          {`{% assign lists = metaobjects['instagram-list']['instagram-feed-list'] %}
+
+{% for post in lists.posts.value %}
+  {% for media in post.images.value %}
+    {% if media.sources %}
+      {{ media | video_tag }}
+    {% else %}
+      {{ media | image_url: width: 800 }}
+    {% endif %}
+  {% endfor %}
+{% endfor %}`}
+                        </pre>
+                      </Box>
+                    </BlockStack>
+
                     <BlockStack gap="200">
                       <Text as="p" variant="headingSm">
                         Basic Instagram Feed (from instagram-carousel.liquid)

@@ -84,6 +84,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
       // Create HTML success page that redirects back to Shopify
       const shopSlug = shop.replace(".myshopify.com", "");
+      const appSlug = process.env.SHOPIFY_APP_SLUG || "ig-devtools";
+      // Debug: log which slug we're using for redirect
+      console.log(
+        `[instagram.callback] shopSlug=${shopSlug} appSlug=${appSlug}`,
+      );
       const successHtml = `
         <!DOCTYPE html>
         <html>
@@ -110,7 +115,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           </div>
             <script>
             setTimeout(() => {
-              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/nn-instagram/app/social-status';
+              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/ig-devtools/app/social-status';
             }, 3000);
           </script>
         </body>

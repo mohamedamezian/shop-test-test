@@ -1,5 +1,7 @@
-import { json, LoaderFunctionArgs } from "@remix-run/node";
+import { LoaderFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
+import { boundary } from "@shopify/shopify-app-react-router/server";
+import type { HeadersFunction } from "react-router";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -75,8 +77,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
   }
 
-  return json({
+  return {
     deletedMetaobjects: [...postMetaobjectIds, ...listMetaobjectIds],
     deletedFiles: fileIds,
-  });
+  };
+};
+export const headers: HeadersFunction = (headersArgs) => {
+  return boundary.headers(headersArgs);
 };

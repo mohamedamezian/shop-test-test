@@ -1,4 +1,4 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
+import type { LoaderFunctionArgs } from "react-router";
 import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -115,7 +115,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           </div>
             <script>
             setTimeout(() => {
-              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/ig-devtools/app/social-status';
+              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/ig-devtools/app/';
             }, 3000);
           </script>
         </body>

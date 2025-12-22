@@ -1,9 +1,10 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
+import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { projectUpdate } from "next/dist/build/swc/generated-native";
 import { writeFile } from "fs/promises";
 import { join } from "path";
+import { boundary } from "@shopify/shopify-app-react-router/server";
 
 // Types for Instagram data
 export interface InstagramCarouselData {
@@ -503,18 +504,53 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return { error: "No Instagram account connected" };
   }
 
+  // Check if Instagram token has expired
+  if (account.expiresAt && new Date(account.expiresAt) < new Date()) {
+    return {
+      error:
+        "Instagram token has expired. Please reconnect your Instagram account.",
+      expired: true,
+    };
+  }
+
   // Fetch posts from Instagram API
   const igResponse = await fetch(
     `https://graph.instagram.com/me/media?fields=id,media_type,media_url,thumbnail_url,view_count,like_count,comments_count,permalink,caption,timestamp,children{media_url,media_type,thumbnail_url}&access_token=${account.accessToken}`,
   );
   const igData = await igResponse.json();
 
+  // Check if Instagram API returned an error (e.g., invalid/expired token)
+  if (igData.error) {
+    console.error("Instagram API error:", igData.error);
+    return {
+      error: `Instagram API error: ${igData.error.message || "Invalid or expired token"}. Please reconnect your Instagram account.`,
+      igError: igData.error,
+    };
+  }
+
   const igUserResponse = await fetch(
     `https://graph.instagram.com/me/?fields=followers_count,name,username&access_token=${account.accessToken}`,
   );
   const userData = await igUserResponse.json();
 
+  // Check user data response
+  if (userData.error) {
+    console.error("Instagram user API error:", userData.error);
+    return {
+      error: `Instagram API error: ${userData.error.message || "Invalid or expired token"}. Please reconnect your Instagram account.`,
+      igError: userData.error,
+    };
+  }
+
   const posts = igData.data as InstagramPost[];
+
+  if (!posts || posts.length === 0) {
+    return {
+      success: true,
+      message: "No Instagram posts found to sync",
+      postsCount: 0,
+    };
+  }
 
   addLog("fetchInstagramPosts", {
     postsCount: posts.length,
@@ -531,8 +567,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   console.log(`📸 Syncing ${posts.length} Instagram posts`);
 
   // Track results
-  const uploadResults = [];
-  const postObjectIds = [];
+  const uploadResults: any[] = [];
+  const postObjectIds: string[] = [];
   let existingCount = 0;
   let username = userData.username;
   let displayName = userData.name;
@@ -699,4 +735,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // postObjectIds,
     // logFile: `logs/instagram-sync-${timestamp}.json`,
   };
+};
+export const headers: HeadersFunction = (headersArgs) => {
+  return boundary.headers(headersArgs);
 };

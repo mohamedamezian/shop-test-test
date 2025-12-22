@@ -1,9 +1,11 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { Meta, useLoaderData, useNavigate } from "@remix-run/react";
-import { AppProvider } from "@shopify/shopify-app-remix/react";
+import type { LoaderFunctionArgs } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
+import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
 import { authenticate } from "../../shopify.server";
-import { Button } from "@shopify/polaris";
+
+import { boundary } from "@shopify/shopify-app-react-router/server";
+import type { HeadersFunction } from "react-router";
 
 const MetaobjectDefinition = `#graphql
         mutation CreateMetaobjectDefinition($definition: MetaobjectDefinitionCreateInput!) {
@@ -253,13 +255,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+export const headers: HeadersFunction = (headersArgs) => {
+  return boundary.headers(headersArgs);
+};
+
 export default function Index() {
   const { apiKey, existsList, existsPost, createdList, createdPost, errors } =
     useLoaderData<typeof loader>() as any;
   const navigate = useNavigate();
 
   return (
-    <AppProvider isEmbeddedApp apiKey={apiKey}>
+    <AppProvider embedded apiKey={apiKey}>
       <div style={{ padding: "2rem" }}>
         <h1>Welcome to your app 🎉</h1>
         <p>This is the landing page of your Shopify app.</p>
@@ -305,9 +311,9 @@ export default function Index() {
         </div>
 
         <div style={{ marginTop: "1rem" }}>
-          <Button variant="primary" onClick={() => navigate("/app")}>
+          <s-button variant="primary" onClick={() => navigate("/app")}>
             Go to App Dashboard
-          </Button>
+          </s-button>
         </div>
       </div>
     </AppProvider>

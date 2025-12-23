@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "public"."session" (
+CREATE TABLE "Session" (
     "id" TEXT NOT NULL,
     "shop" TEXT NOT NULL,
     "state" TEXT NOT NULL,
@@ -13,14 +13,16 @@ CREATE TABLE "public"."session" (
     "email" TEXT,
     "accountOwner" BOOLEAN NOT NULL DEFAULT false,
     "locale" TEXT,
-    "collaborator" BOOLEAN,
-    "emailVerified" BOOLEAN,
+    "collaborator" BOOLEAN DEFAULT false,
+    "emailVerified" BOOLEAN DEFAULT false,
+    "refreshToken" TEXT,
+    "refreshTokenExpires" TIMESTAMP(3),
 
-    CONSTRAINT "session_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "public"."social_account" (
+CREATE TABLE "social_account" (
     "id" TEXT NOT NULL,
     "shop" TEXT NOT NULL,
     "provider" TEXT NOT NULL,
@@ -34,4 +36,4 @@ CREATE TABLE "public"."social_account" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "social_account_shop_provider_key" ON "public"."social_account"("shop", "provider");
+CREATE UNIQUE INDEX "social_account_shop_provider_key" ON "social_account"("shop", "provider");

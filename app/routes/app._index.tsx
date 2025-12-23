@@ -10,15 +10,6 @@ import {
   useFetcher,
 } from "react-router";
 import { useState, useEffect } from "react";
-
-import {
-  RefreshIcon,
-  LogoInstagramIcon,
-  CalendarIcon,
-  ImageIcon,
-  FileIcon,
-  CheckIcon,
-} from "@shopify/polaris-icons";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -62,13 +53,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Fetch Instagram profile info
     try {
       const profileResponse = await fetch(
-        `https://graph.instagram.com/me?fields=id,username,media_count&access_token=${socialAccount.accessToken}`,
+        `https://graph.instagram.com/me?fields=id,username,profile_picture_url,media_count&access_token=${socialAccount.accessToken}`,
       );
       const profileData = await profileResponse.json();
 
       instagramAccount = {
         username: profileData.username || "Unknown",
         userId: profileData.id,
+        profilePicture: profileData.profile_picture_url,
         connectedAt: socialAccount.createdAt.toISOString(),
       };
     } catch (error) {
@@ -421,6 +413,7 @@ export default function Index() {
   const submit = useSubmit();
   const navigation = useNavigation();
   const fetcher = useFetcher();
+  const syncFetcher = useFetcher();
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string>("");
   const [syncProgress, setSyncProgress] = useState(0);
@@ -459,97 +452,55 @@ export default function Index() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  const handleSync = async () => {
+  const handleSync = () => {
     setIsSyncing(true);
     setSyncStatus("Connecting to Instagram...");
     setSyncProgress(10);
 
-    try {
-      // Store the current counts before sync
-      const beforeSync = {
-        posts: syncStats.postsCount,
-        files: syncStats.filesCount,
-        metaobjects: syncStats.metaobjectsCount,
-      };
+    // Use fetcher to call the sync endpoint
+    syncFetcher.load("/api/instagram/staged-upload");
+  };
 
+  // Handle sync fetcher response
+  useEffect(() => {
+    if (syncFetcher.state === "loading" && isSyncing) {
       setSyncStatus("Fetching Instagram posts...");
       setSyncProgress(30);
+    }
 
-      // Call the sync endpoint
-      const response = await fetch("/api/instagram/staged-upload", {
-        method: "GET",
-      });
+    if (syncFetcher.state === "idle" && syncFetcher.data && isSyncing) {
+      const result = syncFetcher.data as any;
 
-      if (response.ok) {
-        const result = await response.json();
+      // Check if there was an error in the response
+      if (result.error) {
+        setSyncStatus(`❌ ${result.error}`);
+        setSyncProgress(0);
+        setTimeout(() => setIsSyncing(false), 5000);
+        return;
+      }
 
-        // Check if there was an error in the response (like expired token)
-        if (result.error) {
-          setSyncStatus(`❌ ${result.error}`);
-          setSyncProgress(0);
-          setTimeout(() => setIsSyncing(false), 5000);
-          return;
-        }
+      // Success!
+      setSyncStatus("Uploading media files to Shopify...");
+      setSyncProgress(60);
 
-        setSyncStatus("Uploading media files to Shopify...");
-        setSyncProgress(60);
-
-        // Wait a bit for the sync to complete
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
+      setTimeout(() => {
         setSyncStatus("Creating metaobjects...");
         setSyncProgress(80);
 
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        setSyncProgress(100);
-
-        // Fetch updated counts
-        try {
-          const loaderResponse = await fetch(window.location.href);
-          const html = await loaderResponse.text();
-
-          // Show completion message
-          const newPosts = syncStats.postsCount - beforeSync.posts;
-          const newFiles = syncStats.filesCount - beforeSync.files;
-
-          if (newPosts > 0 || newFiles > 0) {
-            setSyncStatus(
-              `✓ Sync completed! Added ${newPosts} posts and ${newFiles} files.`,
-            );
-          } else {
-            setSyncStatus("✓ Sync completed! All posts are up to date.");
-          }
-        } catch {
-          setSyncStatus("✓ Sync completed successfully!");
-        }
-
-        // Reload the page after showing summary
         setTimeout(() => {
-          window.location.reload();
-        }, 3000);
-      } else {
-        // Try to get error message from response
-        try {
-          const errorData = await response.json();
-          if (errorData.error) {
-            setSyncStatus(`❌ ${errorData.error}`);
-          } else {
-            setSyncStatus("Sync failed. Please try again.");
-          }
-        } catch {
-          setSyncStatus("Sync failed. Please try again.");
-        }
-        setSyncProgress(0);
-        setTimeout(() => setIsSyncing(false), 5000);
-      }
-    } catch (error) {
-      console.error("Sync error:", error);
-      setSyncStatus("Sync failed. Please try again.");
-      setSyncProgress(0);
-      setTimeout(() => setIsSyncing(false), 2000);
+          setSyncProgress(100);
+          setSyncStatus("✓ Sync completed successfully!");
+
+          // Reset and let the fetcher auto-revalidate the loader
+          setTimeout(() => {
+            setIsSyncing(false);
+            setSyncStatus("");
+            setSyncProgress(0);
+          }, 2000);
+        }, 1500);
+      }, 2000);
     }
-  };
+  }, [syncFetcher.state, syncFetcher.data, isSyncing]);
 
   const handleConnect = () => {
     window.open(
@@ -610,11 +561,11 @@ export default function Index() {
 
   return (
     <s-page>
-      {/* Delete Success s-banner */}
+      {/* Delete Success Banner */}
       {deleteMessage && (
         <s-section>
           <s-banner tone="success" onDismiss={() => setDeleteMessage("")}>
-            <s-text>{deleteMessage}</s-text>
+            {deleteMessage}
           </s-banner>
         </s-section>
       )}
@@ -622,238 +573,269 @@ export default function Index() {
       {/* Manual Sync Card */}
       {isConnected && (
         <s-section>
-          <s-stack gap="small-400">
-            <s-stack direction="inline">
-              <s-stack gap="small-200">
-                <s-text>Manual Sync</s-text>
-                <s-text>
-                  Fetch the latest posts from your Instagram account
+          <s-banner tone="info">
+            Your Instagram posts sync automatically every 24 hours. Use the
+            "Sync Now" button above to manually fetch the latest posts.
+          </s-banner>
+          <s-card>
+            <s-stack gap="base">
+              <s-stack gap="small-500">
+                <s-heading>Instagram Sync</s-heading>
+
+                <s-text color="subdued">
+                  Fetch and sync your latest Instagram posts to Shopify
                 </s-text>
               </s-stack>
-              <s-button
-                variant="primary"
-                onClick={handleSync}
-                loading={isSyncing}
-                disabled={isActionRunning}
-              >
-                Sync Now
-              </s-button>
-            </s-stack>
 
-            {isSyncing && (
-              <>
-                <s-divider />
-                <s-stack gap="small-300">
+              {isSyncing && (
+                <s-stack gap="base">
                   <s-stack gap="small-200" direction="inline">
                     <s-spinner />
                     <s-text>{syncStatus}</s-text>
                   </s-stack>
+                  {syncProgress > 0 && (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "4px",
+                        background: "#e1e1e1",
+                        borderRadius: "2px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${syncProgress}%`,
+                          height: "100%",
+                          background: "#008060",
+                          borderRadius: "2px",
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                    </div>
+                  )}
                 </s-stack>
-              </>
-            )}
+              )}
 
-            {!isSyncing && syncStats.lastSyncTime && (
-              <>
-                <s-divider />
-                <s-stack gap="small-200" direction="inline">
-                  <s-icon type="calendar" />
-                  <s-text>
-                    Last synced {formatDate(syncStats.lastSyncTime)}
-                  </s-text>
+              {!isSyncing && (
+                <s-stack gap="small-100">
+                  <s-box>
+                    <s-button
+                      onClick={handleSync}
+                      loading={isSyncing}
+                      disabled={isActionRunning}
+                    >
+                      Sync Now
+                    </s-button>
+                  </s-box>
+                  {syncStats.lastSyncTime && (
+                    <s-text color="subdued">
+                      Last synced {formatDate(syncStats.lastSyncTime)}
+                    </s-text>
+                  )}
                 </s-stack>
-              </>
-            )}
-          </s-stack>
+              )}
+            </s-stack>
+          </s-card>
         </s-section>
       )}
 
       {/* Connection Status */}
       <s-section>
-        <s-stack gap="small-400">
-          <s-stack direction="inline">
-            <s-text>Account Connection</s-text>
-            {isConnected ? (
-              <s-badge tone="success">Connected</s-badge>
-            ) : (
-              <s-badge tone="critical">Not Connected</s-badge>
-            )}
-          </s-stack>
+        <s-card>
+          <s-stack gap="base">
+            <s-stack direction="inline" gap="small-200">
+              <s-heading>Instagram Account</s-heading>
+              {isConnected ? (
+                <s-badge tone="success">Connected</s-badge>
+              ) : (
+                <s-badge tone="critical">Not Connected</s-badge>
+              )}
+            </s-stack>
 
-          <s-divider />
-
-          {isConnected && instagramAccount ? (
-            <s-stack gap="small-400">
-              <s-stack gap="small-400" direction="inline">
-                {instagramAccount.profilePicture && (
-                  <s-thumbnail
-                    src={instagramAccount.profilePicture}
-                    alt={instagramAccount.username}
-                    size="large"
-                  />
-                )}
-                <s-stack gap="small-200">
-                  <s-stack gap="small-200" direction="inline">
-                    <s-icon type="social-post" />
-                    <s-text>@{instagramAccount.username}</s-text>
+            {isConnected && instagramAccount ? (
+              <s-stack gap="base">
+                <s-stack gap="base" direction="inline">
+                  {instagramAccount.profilePicture && (
+                    <s-thumbnail
+                      src={instagramAccount.profilePicture}
+                      alt={instagramAccount.username}
+                      size="large"
+                    />
+                  )}
+                  <s-stack gap="small-100">
+                    <s-text type="strong">@{instagramAccount.username}</s-text>
+                    <s-text color="subdued">
+                      User ID: {instagramAccount.userId}
+                    </s-text>
+                    <s-text color="subdued">
+                      Connected {formatDate(instagramAccount.connectedAt)}
+                    </s-text>
                   </s-stack>
-                  <s-text>User ID: {instagramAccount.userId}</s-text>
-                  <s-text>
-                    Connected {formatDate(instagramAccount.connectedAt)}
-                  </s-text>
+                </s-stack>
+
+                <s-divider />
+
+                <s-stack gap="small-200" direction="inline">
+                  <s-button
+                    onClick={handleSwitchAccount}
+                    disabled={isSyncing || isActionRunning}
+                  >
+                    Switch Account
+                  </s-button>
+                  <s-button
+                    onClick={handleDeleteData}
+                    tone="critical"
+                    loading={
+                      fetcher.state === "submitting" &&
+                      fetcher.formData?.get("action") === "delete-data"
+                    }
+                    disabled={isSyncing || isActionRunning}
+                  >
+                    Delete Data
+                  </s-button>
+                  <s-button
+                    onClick={handleDisconnect}
+                    tone="critical"
+                    loading={
+                      fetcher.state === "submitting" &&
+                      fetcher.formData?.get("action") === "disconnect"
+                    }
+                    disabled={isSyncing || isActionRunning}
+                  >
+                    Disconnect
+                  </s-button>
                 </s-stack>
               </s-stack>
-
-              <s-divider />
-
-              <s-stack gap="small-300" direction="inline">
-                <s-button
-                  onClick={handleSwitchAccount}
-                  disabled={isSyncing || isActionRunning}
-                >
-                  Switch Account
-                </s-button>
-                <s-button
-                  onClick={handleDeleteData}
-                  tone="critical"
-                  loading={
-                    fetcher.state === "submitting" &&
-                    fetcher.formData?.get("action") === "delete-data"
-                  }
-                  disabled={isSyncing || isActionRunning}
-                >
-                  Delete Data
-                </s-button>
-                <s-button
-                  onClick={handleDisconnect}
-                  tone="critical"
-                  loading={
-                    fetcher.state === "submitting" &&
-                    fetcher.formData?.get("action") === "disconnect"
-                  }
-                  disabled={isSyncing || isActionRunning}
-                >
-                  Disconnect Account
-                </s-button>
+            ) : (
+              <s-stack gap="base">
+                <s-text>
+                  Connect your Instagram Business account to sync posts to
+                  Shopify metaobjects and files.
+                </s-text>
+                <s-box>
+                  <s-button variant="primary" onClick={handleConnect}>
+                    Connect Instagram Account
+                  </s-button>
+                </s-box>
               </s-stack>
-            </s-stack>
-          ) : (
-            <s-stack gap="small-400">
-              <s-text>
-                Connect your Instagram Business account to start syncing your
-                posts to Shopify.
-              </s-text>
-              <s-box>
-                <s-button variant="primary" onClick={handleConnect}>
-                  <s-icon type="social-post" />
-                  Connect Instagram Account
-                </s-button>
-              </s-box>
-            </s-stack>
-          )}
-        </s-stack>
+            )}
+          </s-stack>
+        </s-card>
       </s-section>
 
       {/* Sync Statistics */}
       {isConnected && (
         <>
           <s-section>
-            <s-stack gap="small-400">
-              <s-text>Sync Statistics</s-text>
+            <s-card>
+              <s-stack gap="base">
+                <s-heading>Sync Statistics</s-heading>
 
-              <s-divider />
-
-              <s-stack gap="small-400" direction="inline">
-                <s-box>
-                  <s-stack gap="small-200">
-                    <s-stack gap="small-200" direction="inline">
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "16px",
+                  }}
+                >
+                  {/* Posts Card */}
+                  <s-clickable
+                    href={`https://admin.shopify.com/store/${shop.replace(
+                      ".myshopify.com",
+                      "",
+                    )}/content/metaobjects/entries/instagram-post`}
+                    target="_blank"
+                    border="base"
+                    borderRadius="base"
+                    padding="base"
+                  >
+                    <s-stack gap="small-200">
                       <s-icon type="social-post" tone="info" />
-                      <s-text>Posts Synced</s-text>
+                      <div style={{ fontSize: "28px", fontWeight: "600" }}>
+                        {syncStats.postsCount}
+                      </div>
+                      <s-text color="subdued">Posts Synced</s-text>
                     </s-stack>
-                    <s-text>{syncStats.postsCount}</s-text>
-                    <s-link
-                      href={`https://admin.shopify.com/store/${shop.replace(
-                        ".myshopify.com",
-                        "",
-                      )}/content/metaobjects/instagram-post`}
-                      target="_blank"
-                    >
-                      <s-text>View in Shopify →</s-text>
-                    </s-link>
-                  </s-stack>
-                </s-box>
+                  </s-clickable>
 
-                <s-box>
-                  <s-stack gap="small-200">
-                    <s-stack gap="small-200" direction="inline">
+                  {/* Files Card */}
+                  <s-clickable
+                    href={`https://admin.shopify.com/store/${shop.replace(
+                      ".myshopify.com",
+                      "",
+                    )}/content/files?selectedView=all&media_type=IMAGE%2CVIDEO&query=instagram`}
+                    target="_blank"
+                    border="base"
+                    borderRadius="base"
+                    padding="base"
+                  >
+                    <s-stack gap="small-200">
                       <s-icon type="image" tone="success" />
-                      <s-text>Files Created</s-text>
+                      <div style={{ fontSize: "28px", fontWeight: "600" }}>
+                        {syncStats.filesCount}
+                      </div>
+                      <s-text color="subdued">Files Created</s-text>
                     </s-stack>
-                    <s-text>{syncStats.filesCount}</s-text>
-                    <s-link
-                      href={`https://admin.shopify.com/store/${shop.replace(
-                        ".myshopify.com",
-                        "",
-                      )}/content/files?selectedView=all&media_type=IMAGE%2CVIDEO&query=instagram`}
-                      target="_blank"
-                    >
-                      <s-text>View in Shopify →</s-text>
-                    </s-link>
-                  </s-stack>
-                </s-box>
+                  </s-clickable>
 
-                <s-box>
-                  <s-stack gap="small-200">
-                    <s-stack gap="small-200" direction="inline">
+                  {/* Metaobjects Card */}
+                  <s-clickable
+                    href={`https://admin.shopify.com/store/${shop.replace(
+                      ".myshopify.com",
+                      "",
+                    )}/content/metaobjects`}
+                    target="_blank"
+                    border="base"
+                    borderRadius="base"
+                    padding="base"
+                  >
+                    <s-stack gap="small-200">
                       <s-icon type="file" tone="warning" />
-                      <s-text>Metaobjects</s-text>
+                      <div style={{ fontSize: "28px", fontWeight: "600" }}>
+                        {syncStats.metaobjectsCount}
+                      </div>
+                      <s-text color="subdued">Metaobjects</s-text>
                     </s-stack>
-                    <s-text>{syncStats.metaobjectsCount}</s-text>
-                    <s-link
-                      href={`https://admin.shopify.com/store/${shop.replace(
-                        ".myshopify.com",
-                        "",
-                      )}/content/metaobjects`}
-                      target="_blank"
-                    >
-                      <s-text>View in Shopify →</s-text>
-                    </s-link>
-                  </s-stack>
-                </s-box>
+                  </s-clickable>
+                </div>
               </s-stack>
-            </s-stack>
+            </s-card>
           </s-section>
 
+          {/* Theme Snippets Download Section */}
           <s-section>
-            <s-banner tone="info">
-              <s-stack gap="small-200">
-                <s-text>
-                  Your Instagram posts are automatically synced. Use the "Sync
-                  Now" button to manually fetch the latest posts.
-                </s-text>
-                <s-text>
-                  Note: The sync process may take a few minutes depending on the
-                  number of posts.
-                </s-text>
+            <s-card>
+              <s-stack gap="base">
+                <s-stack gap="small-200">
+                  <s-heading>Theme Integration</s-heading>
+                  <s-text color="subdued">
+                    Download ready-to-use Liquid snippets for your Shopify theme
+                  </s-text>
+                </s-stack>
+
+                <s-banner tone="info">
+                  Coming soon: Download pre-built theme snippets to quickly add
+                  Instagram feeds to your store
+                </s-banner>
               </s-stack>
-            </s-banner>
+            </s-card>
           </s-section>
 
           {/* Developer Guide */}
           <s-section>
-            <s-stack gap="small-400">
-              <s-text>Developer Guide: Using Instagram Data in Liquid</s-text>
+            <s-card>
+              <s-stack gap="base">
+                <s-heading>Developer Guide</s-heading>
 
-              <s-divider />
-
-              <s-stack gap="small-300">
-                <s-text>
-                  Use the synced Instagram posts in your theme with Liquid code.
-                  Here are real examples from this app:
+                <s-text color="subdued">
+                  Access the synced Instagram posts in your theme with this
+                  simple Liquid code.
                 </s-text>
 
-                {/* Minimal example: no divs/styling, just assign + loops */}
+                <s-divider />
+
                 <s-stack gap="small-200">
-                  <s-text>Minimal copy-paste example</s-text>
+                  <s-text type="strong">Accessing the Data</s-text>
                   <s-box
                     padding="base"
                     background="subdued"
@@ -868,213 +850,39 @@ export default function Index() {
                         fontFamily: "monospace",
                       }}
                     >
-                      {`{% assign lists = metaobjects['instagram-list']['instagram-feed-list'] %}
+                      {`{% assign instagram = metaobjects['instagram-list']['instagram-feed-list'] %}
 
-{% for post in lists.posts.value %}
+{% for post in instagram.posts.value %}
+  {{ post.caption.value }}
+  {{ post.likes.value }}
+  {{ post.comments.value }}
+  
   {% for media in post.images.value %}
-    {% if media.sources %}
-      {{ media | video_tag }}
-    {% else %}
-      {{ media | image_url: width: 800 }}
-    {% endif %}
+    {{ media | image_url: width: 800 }}
   {% endfor %}
 {% endfor %}`}
                     </pre>
                   </s-box>
                 </s-stack>
 
+                <s-divider />
+
                 <s-stack gap="small-200">
-                  <s-text>
-                    Basic Instagram Feed (from instagram-carousel.liquid)
+                  <s-text type="strong">Available Fields</s-text>
+                  <s-text color="subdued">
+                    Each post includes: caption, likes, comments, images, and
+                    permalink
                   </s-text>
-                  <s-box
-                    padding="base"
-                    background="subdued"
-                    borderRadius="base"
-                  >
-                    <pre
-                      style={{
-                        fontSize: "12px",
-                        lineHeight: "1.5",
-                        overflow: "auto",
-                        margin: 0,
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {`{% assign lists = metaobjects['instagram-list']['instagram-feed-list'] %}
-
-<section class="instagram-feed">
-  {% for post in lists.posts.value %}
-    <div class="instagram-card">
-      {% for media in post.images.value limit: 1 %}
-        {% if media.sources %}
-          {{ media | video_tag: autoplay: true, loop: true, muted: true }}
-        {% else %}
-          <img src="{{ media | image_url: width: 800, height: 1200, crop: 'center' }}"
-               alt="Instagram Post">
-        {% endif %}
-      {% endfor %}
-      
-      <div class="overlay">
-        <div class="stats">
-          <span class="likes">{{ post.likes.value }} ❤️</span>
-          <span class="comments">{{ post.comments.value }} 💬</span>
-        </div>
-      </div>
-    </div>
-  {% endfor %}
-</section>
-
-<footer>
-  <h4>@{{ lists.username }}</h4>
-</footer>`}
-                    </pre>
-                  </s-box>
                 </s-stack>
 
-                <s-stack gap="small-200">
-                  <s-text>Carousel Album with Multiple Images</s-text>
-                  <s-box
-                    padding="base"
-                    background="subdued"
-                    borderRadius="base"
-                  >
-                    <pre
-                      style={{
-                        fontSize: "12px",
-                        lineHeight: "1.5",
-                        overflow: "auto",
-                        margin: 0,
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {`{% assign lists = metaobjects['instagram-list']['instagram-feed-list'] %}
-
-{% for post in lists.posts.value %}
-  <div class="instagram-post">
-    <!-- Loop through all images in a carousel post -->
-    {% for media in post.images.value %}
-      <div class="slide" data-slide="{{ forloop.index0 }}">
-        {% if media.sources %}
-          <video controls playsinline>
-            {% for source in media.sources %}
-              <source src="{{ source.url }}" type="{{ source.mime_type }}">
-            {% endfor %}
-          </video>
-        {% else %}
-          <img src="{{ media | image_url: width: 1200 }}"
-               alt="Instagram post {{ forloop.index }}">
-        {% endif %}
-      </div>
-    {% endfor %}
-    
-    <!-- Show indicators if multiple images -->
-    {% if post.images.value.size > 1 %}
-      <div class="indicators">
-        {% for media in post.images.value %}
-          <div class="dot" data-index="{{ forloop.index0 }}"></div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  </div>
-{% endfor %}`}
-                    </pre>
-                  </s-box>
-                </s-stack>
-
-                <s-stack gap="small-200">
-                  <s-text>Display Post Details with Caption</s-text>
-                  <s-box
-                    padding="base"
-                    background="subdued"
-                    borderRadius="base"
-                  >
-                    <pre
-                      style={{
-                        fontSize: "12px",
-                        lineHeight: "1.5",
-                        overflow: "auto",
-                        margin: 0,
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {`{% assign lists = metaobjects['instagram-list']['instagram-feed-list'] %}
-
-{% for post in lists.posts.value %}
-  <article class="instagram-post-detail">
-    <div class="post-header">
-      <strong>@{{ lists.username }}</strong>
-    </div>
-    
-    <div class="post-stats">
-      <span>❤️ {{ post.likes.value }} likes</span>
-      <span>💬 {{ post.comments.value }} comments</span>
-    </div>
-    
-    <div class="post-caption">
-      <strong>@{{ lists.username }}</strong> {{ post.caption.value }}
-    </div>
-    
-    <div class="post-date">
-      {{ post.timestamp.value | date: "%B %d, %Y" }}
-    </div>
-  </article>
-{% endfor %}`}
-                    </pre>
-                  </s-box>
-                </s-stack>
-
-                <s-stack gap="small-200">
-                  <s-text>Available Metaobject Fields</s-text>
-                  <s-box
-                    padding="base"
-                    background="subdued"
-                    borderRadius="base"
-                  >
-                    <pre
-                      style={{
-                        fontSize: "12px",
-                        lineHeight: "1.5",
-                        overflow: "auto",
-                        margin: 0,
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {`instagram-list metaobject:
-  • lists.username          - Instagram username
-  • lists.posts.value       - Array of post references
-
-instagram-post metaobject (each post):
-  • post.images.value       - Array of media (images/videos)
-  • post.caption.value      - Post caption text
-  • post.likes.value        - Number of likes
-  • post.comments.value     - Number of comments
-  • post.timestamp.value    - Post timestamp
-  • post.permalink.value    - Link to Instagram post
-
-Each media item:
-  • media.sources           - Video sources (if video)
-  • media | image_url       - Image URL filter
-  • media | video_tag       - Video tag filter`}
-                    </pre>
-                  </s-box>
-                </s-stack>
-
-                <s-text>
-                  💡 Tip: Use the "View in Shopify" links above to see your
-                  metaobject IDs and explore all available fields.
-                </s-text>
-
-                <s-text>
-                  📦 Check the theme extension at{" "}
-                  <code>
-                    extensions/instagram-feed/blocks/instagram-carousel.liquid
-                  </code>{" "}
-                  for a complete working example with modal, carousel
-                  navigation, and animations.
-                </s-text>
+                <s-banner tone="info">
+                  <s-text>
+                    Click the statistics cards above to view your metaobjects in
+                    Shopify admin and explore all fields.
+                  </s-text>
+                </s-banner>
               </s-stack>
-            </s-stack>
+            </s-card>
           </s-section>
         </>
       )}

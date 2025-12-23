@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useNavigate } from "react-router";
+import { Outlet, useLoaderData, useNavigate } from "react-router";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
 import { authenticate } from "../../shopify.server";
@@ -266,6 +266,10 @@ export default function Index() {
 
   return (
     <AppProvider embedded apiKey={apiKey}>
+      <s-app-nav>
+        <s-link href="/app">Home</s-link>
+      </s-app-nav>
+      <Outlet />
       <div style={{ padding: "2rem" }}>
         <h1>Welcome to your app 🎉</h1>
         <p>This is the landing page of your Shopify app.</p>

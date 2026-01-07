@@ -3,9 +3,78 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { shop, session, topic } = await authenticate.webhook(request);
+  const { shop, session, topic, admin } = await authenticate.webhook(request);
 
   console.log(`Received ${topic} webhook for ${shop}`);
+
+  // Delete Instagram files and metaobject definitions
+  if (admin) {
+    try {
+      // Delete files with alt text starting with instagram-post_
+      const filesQuery = await admin.graphql(`
+        query {
+          files(first: 100, query: "alt:instagram-post_") {
+            edges { node { id } }
+          }
+        }
+      `);
+      const filesJson = await filesQuery.json();
+      const fileIds = filesJson.data.files.edges.map((e: any) => e.node.id);
+
+      if (fileIds.length > 0) {
+        await admin.graphql(`
+          mutation fileDelete($fileIds: [ID!]!) {
+            fileDelete(fileIds: $fileIds) {
+              deletedFileIds
+              userErrors { field message }
+            }
+          }
+        `, {
+          variables: { fileIds }
+        });
+        console.log(`Deleted ${fileIds.length} Instagram files for ${shop}`);
+      }
+
+      // Find the definition IDs
+      const definitionsQuery = await admin.graphql(`
+        query {
+          metaobjectDefinitions(first: 10) {
+            nodes {
+              id
+              type
+            }
+          }
+        }
+      `);
+      
+      const definitionsData = await definitionsQuery.json();
+      const definitions = definitionsData.data.metaobjectDefinitions.nodes;
+      
+      // Find and delete instagram-post and instagram-list definitions
+      const instagramDefinitions = definitions.filter(
+        (def: any) => def.type === 'instagram-post' || def.type === 'instagram-list'
+      );
+
+      for (const definition of instagramDefinitions) {
+        await admin.graphql(`
+          mutation deleteDefinition($id: ID!) {
+            metaobjectDefinitionDelete(id: $id) {
+              deletedId
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `, {
+          variables: { id: definition.id }
+        });
+        console.log(`Deleted metaobject definition: ${definition.type}`);
+      }
+    } catch (error) {
+      console.error(`Failed to delete Instagram data for ${shop}:`, error);
+    }
+  }
 
   // Webhook requests can trigger multiple times and after an app has already been uninstalled.
   // If this webhook already ran, the session may have been deleted previously.

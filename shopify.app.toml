@@ -11,22 +11,32 @@ automatically_update_urls_on_dev = true
 [webhooks]
 api_version = "2025-10"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks/app/uninstalled"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
+[[webhooks.subscriptions]]
+topics = ["app/scopes_update"]
+uri = "/webhooks/app/scopes_update"
+
+# GDPR Compliance Webhooks (mandatory for App Store)
+[[webhooks.subscriptions]]
+compliance_topics = [
+  "customers/data_request",
+  "customers/redact",
+  "shop/redact",
+]
+uri = "/webhooks"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_metaobjects,write_files,write_metaobject_definitions,write_metaobjects,write_products,write_themes"
+# Minimal scopes required for Instagram feed functionality
+scopes = "read_metaobjects,write_files,write_metaobject_definitions,write_metaobjects,write_themes"
 
 [auth]
 redirect_urls = [
   "https://shop-test-test.vercel.app/auth/callback",
   "https://shop-test-test.vercel.app/auth/shopify/callback",
   "https://shop-test-test.vercel.app/api/auth/callback",
-  "https://shop-test-test.vercel.app/instagram/callback"
+  "https://shop-test-test.vercel.app/instagram/callback",
 ]

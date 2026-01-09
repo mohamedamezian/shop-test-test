@@ -136,11 +136,48 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
   }
 
+  // Fetch theme pages (templates) for app block installation
+  let themePages: Array<{ label: string; value: string }> = [];
+  try {
+    // Get the published theme
+    const themesQuery = await admin.graphql(`
+      #graphql
+      query {
+        themes(first: 1, roles: MAIN) {
+          nodes {
+            id
+            name
+            role
+          }
+        }
+      }
+    `);
+    const themesData = await themesQuery.json();
+    const publishedTheme = themesData.data?.themes?.nodes?.[0];
+
+    if (publishedTheme) {
+      // Common Shopify theme templates
+      themePages = [
+        { label: "Home Page", value: "index" },
+        { label: "Product Page", value: "product" },
+        { label: "Collection Page", value: "collection" },
+        { label: "Page", value: "page" },
+        { label: "Blog", value: "blog" },
+        { label: "Article", value: "article" },
+        { label: "Cart", value: "cart" },
+        { label: "Search", value: "search" },
+      ];
+    }
+  } catch (error) {
+    console.error("Error fetching theme pages:", error);
+  }
+
   return {
     shop: session.shop,
     instagramAccount,
     syncStats,
     isConnected: !!socialAccount,
+    themePages,
   };
 };
 
@@ -404,20 +441,57 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
 
+  if (actionType === "add-to-theme") {
+    const selectedTemplate = formData.get("template");
+    
+    if (!selectedTemplate) {
+      return {
+        success: false,
+        message: "Please select a page",
+        status: 400,
+      };
+    }
+
+    try {
+      // Note: Shopify doesn't provide a direct API to programmatically add app blocks to themes
+      // We need to redirect to the theme editor with the app block pre-selected
+      const storeHandle = session.shop.replace(".myshopify.com", "");
+      // App block ID format: {client-id}/{block-filename}
+      // The block filename is the .liquid file name without extension
+      const appBlockId = "02fee5ebd0c35e7e65f2bdb8944e1ffa/instagram-carousel";
+      
+      // Return the URL for the client to open
+      return {
+        success: true,
+        redirectUrl: `https://admin.shopify.com/store/${storeHandle}/themes/current/editor?template=${selectedTemplate}&addAppBlockId=${appBlockId}`,
+        message: `Opening theme editor for ${selectedTemplate} page...`,
+      };
+    } catch (error) {
+      console.error("Add to theme error:", error);
+      return {
+        success: false,
+        message: "Failed to open theme editor. Please try again.",
+        status: 500,
+      };
+    }
+  }
+
   return { success: false, message: "Invalid action", status: 400 };
 };
 
 export default function Index() {
-  const { shop, instagramAccount, syncStats, isConnected } =
+  const { shop, instagramAccount, syncStats, isConnected, themePages } =
     useLoaderData<typeof loader>();
   const submit = useSubmit();
   const navigation = useNavigation();
   const fetcher = useFetcher();
   const syncFetcher = useFetcher();
+  const themeFetcher = useFetcher();
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string>("");
   const [syncProgress, setSyncProgress] = useState(0);
   const [deleteMessage, setDeleteMessage] = useState<string>("");
+  const [selectedPage, setSelectedPage] = useState<string>("index");
 
   const isActionRunning =
     navigation.state === "submitting" || fetcher.state === "submitting";
@@ -502,6 +576,17 @@ export default function Index() {
     }
   }, [syncFetcher.state, syncFetcher.data, isSyncing]);
 
+  // Handle theme fetcher response
+  useEffect(() => {
+    if (themeFetcher.state === "idle" && themeFetcher.data) {
+      const result = themeFetcher.data as any;
+      if (result.success && result.redirectUrl) {
+        // Open the theme editor in a new tab
+        window.open(result.redirectUrl, "_blank");
+      }
+    }
+  }, [themeFetcher.state, themeFetcher.data]);
+
   const handleConnect = () => {
     window.open(
       `/instagram?shop=${encodeURIComponent(shop)}`,
@@ -540,6 +625,18 @@ export default function Index() {
       formData.append("action", "disconnect");
       fetcher.submit(formData, { method: "post" });
     }
+  };
+
+  const handleAddToTheme = () => {
+    if (!selectedPage) {
+      alert("Please select a page first");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("action", "add-to-theme");
+    formData.append("template", selectedPage);
+    themeFetcher.submit(formData, { method: "post" });
   };
 
   const formatDate = (dateString: string | null) => {
@@ -798,6 +895,97 @@ export default function Index() {
                     </s-stack>
                   </s-clickable>
                 </div>
+              </s-stack>
+            </s-card>
+          </s-section>
+
+          {/* Theme App Extension - Enable App Block */}
+          <s-section>
+            <s-card>
+              <s-stack gap="base">
+                <s-stack gap="small-200">
+                  <s-heading>Add Instagram Feed to Your Theme</s-heading>
+                  <s-text color="subdued">
+                    Choose a page and add the Instagram Feed app block with one click
+                  </s-text>
+                </s-stack>
+
+                <s-banner tone="info">
+                  <s-stack gap="small-500">
+                    <s-text type="strong">How it works</s-text>
+                    <s-text>
+                      1. Select a page from the dropdown below
+                    </s-text>
+                    <s-text>
+                      2. Click "Add to Theme" to open the Theme Editor
+                    </s-text>
+                    <s-text>
+                      3. The Instagram Feed block will be ready to add to your selected page
+                    </s-text>
+                  </s-stack>
+                </s-banner>
+
+                <s-stack gap="base">
+                  <s-stack gap="small-200">
+                    <s-text type="strong">Select a page:</s-text>
+                    <select
+                      value={selectedPage}
+                      onChange={(e) => setSelectedPage(e.target.value)}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: "4px",
+                        border: "1px solid #c9cccf",
+                        fontSize: "14px",
+                        width: "100%",
+                        maxWidth: "300px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {themePages.map((page) => (
+                        <option key={page.value} value={page.value}>
+                          {page.label}
+                        </option>
+                      ))}
+                    </select>
+                  </s-stack>
+
+                  <s-stack gap="small-200" direction="inline">
+                    <s-button 
+                      variant="primary" 
+                      onClick={handleAddToTheme}
+                      loading={themeFetcher.state === "submitting"}
+                    >
+                      Add to Theme
+                    </s-button>
+
+                    <s-clickable
+                      href={`https://admin.shopify.com/store/${shop.replace(
+                        ".myshopify.com",
+                        "",
+                      )}/themes`}
+                      target="_blank"
+                    >
+                      <s-button>View All Themes</s-button>
+                    </s-clickable>
+                  </s-stack>
+                </s-stack>
+
+                <s-divider />
+
+                <s-stack gap="small-200">
+                  <s-text type="strong">What's included:</s-text>
+                  <s-text>
+                    • Instagram Carousel - A beautiful, responsive carousel
+                    displaying your synced posts
+                  </s-text>
+                  <s-text>
+                    • Fully customizable styling and layout options in the Theme
+                    Editor
+                  </s-text>
+                  <s-text>
+                    • Automatic updates when you sync new Instagram posts
+                  </s-text>
+                </s-stack>
               </s-stack>
             </s-card>
           </s-section>

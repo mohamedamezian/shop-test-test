@@ -46,12 +46,15 @@ type Pages = {
   "/app": {
     params: {};
   };
+  "/app/interface": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/api/instagram/staged-upload" | "/webhooks/app/scopes_update" | "/api/delete-instagram-data" | "/webhooks/app/uninstalled" | "/api/cron/refresh" | "/auth/login" | "/instagram" | "/instagram/callback" | "/auth/*" | "/app";
+    page: "/" | "/api/instagram/staged-upload" | "/webhooks/app/scopes_update" | "/api/delete-instagram-data" | "/webhooks/app/uninstalled" | "/api/cron/refresh" | "/auth/login" | "/instagram" | "/instagram/callback" | "/auth/*" | "/app" | "/app/interface";
   };
   "routes/api.instagram.staged-upload.tsx": {
     id: "routes/api.instagram.staged-upload";
@@ -95,7 +98,11 @@ type RouteFiles = {
   };
   "routes/app.tsx": {
     id: "routes/app";
-    page: "/app";
+    page: "/app" | "/app/interface";
+  };
+  "routes/app.interface.tsx": {
+    id: "routes/app.interface";
+    page: "/app/interface";
   };
   "routes/app._index.tsx": {
     id: "routes/app._index";
@@ -116,5 +123,6 @@ type RouteModules = {
   "routes/_index": typeof import("./app/routes/_index/route.tsx");
   "routes/auth.$": typeof import("./app/routes/auth.$.tsx");
   "routes/app": typeof import("./app/routes/app.tsx");
+  "routes/app.interface": typeof import("./app/routes/app.interface.tsx");
   "routes/app._index": typeof import("./app/routes/app._index.tsx");
 };

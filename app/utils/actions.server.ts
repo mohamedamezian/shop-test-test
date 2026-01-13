@@ -1,0 +1,119 @@
+/**
+ * Action handlers for Instagram interface route
+ */
+
+import type { ActionResponse } from "../types/instagram.types";
+import { deleteInstagramData, generateThemeEditorUrl } from "./metaobjects.server";
+import prisma from "../db.server";
+
+/**
+ * Handle sync action - trigger Instagram sync
+ */
+export async function handleSyncAction(request: Request): Promise<ActionResponse> {
+  try {
+    const syncUrl = new URL(request.url);
+    syncUrl.pathname = "/api/instagram/staged-upload";
+
+    const response = await fetch(syncUrl.toString(), {
+      headers: {
+        Cookie: request.headers.get("Cookie") || "",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Sync failed");
+    }
+
+    return { success: true, message: "Sync completed successfully!" };
+  } catch (error) {
+    return {
+      success: false,
+      message: "Sync failed. Please try again.",
+    };
+  }
+}
+
+/**
+ * Handle delete data action - delete all Instagram metaobjects and files
+ */
+export async function handleDeleteDataAction(admin: any): Promise<ActionResponse> {
+  return await deleteInstagramData(admin);
+}
+
+/**
+ * Handle disconnect action - delete data and remove social account
+ */
+export async function handleDisconnectAction(
+  admin: any,
+  shop: string,
+): Promise<ActionResponse> {
+  try {
+    // First delete all Instagram data
+    const deleteResult = await deleteInstagramData(admin);
+
+    if (!deleteResult.success) {
+      return deleteResult;
+    }
+
+    // Then remove the social account connection
+    await prisma.socialAccount.delete({
+      where: {
+        shop_provider: {
+          shop,
+          provider: "instagram",
+        },
+      },
+    });
+
+    console.log(
+      `✓ Disconnected account and deleted ${deleteResult.deletedMetaobjects} metaobjects and ${deleteResult.deletedFiles} files`,
+    );
+
+    return {
+      success: true,
+      deletedMetaobjects: deleteResult.deletedMetaobjects,
+      deletedFiles: deleteResult.deletedFiles,
+      message: `Disconnected and deleted ${deleteResult.deletedMetaobjects} metaobjects and ${deleteResult.deletedFiles} files`,
+    };
+  } catch (error) {
+    console.error("Disconnect error:", error);
+    return {
+      success: false,
+      message: "Disconnect failed. Please try again.",
+      status: 500,
+    };
+  }
+}
+
+/**
+ * Handle add to theme action - generate theme editor URL
+ */
+export async function handleAddToThemeAction(
+  shop: string,
+  template: string,
+): Promise<ActionResponse> {
+  if (!template) {
+    return {
+      success: false,
+      message: "Please select a page",
+      status: 400,
+    };
+  }
+
+  try {
+    const redirectUrl = generateThemeEditorUrl(shop, template);
+
+    return {
+      success: true,
+      redirectUrl,
+      message: `Opening theme editor for ${template} page...`,
+    };
+  } catch (error) {
+    console.error("Add to theme error:", error);
+    return {
+      success: false,
+      message: "Failed to open theme editor. Please try again.",
+      status: 500,
+    };
+  }
+}

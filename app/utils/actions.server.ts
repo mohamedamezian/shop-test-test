@@ -3,7 +3,7 @@
  */
 
 import type { ActionResponse } from "../types/instagram.types";
-import { deleteInstagramData, generateThemeEditorUrl } from "./metaobjects.server";
+import { deleteInstagramData, generateAppEmbedUrl } from "./metaobjects.server";
 import prisma from "../db.server";
 
 /**
@@ -86,27 +86,20 @@ export async function handleDisconnectAction(
 }
 
 /**
- * Handle add to theme action - generate theme editor URL
+ * Handle add to theme action - opens theme editor with app block ready to place
+ * Uses Shopify's deep linking for simplified app block installation
  */
 export async function handleAddToThemeAction(
   shop: string,
-  template: string,
+  template?: string,
 ): Promise<ActionResponse> {
-  if (!template) {
-    return {
-      success: false,
-      message: "Please select a page",
-      status: 400,
-    };
-  }
-
   try {
-    const redirectUrl = generateThemeEditorUrl(shop, template);
+    const redirectUrl = generateAppEmbedUrl(shop, template);
 
     return {
       success: true,
       redirectUrl,
-      message: `Opening theme editor for ${template} page...`,
+      message: "Opening theme editor to add Instagram feed block...",
     };
   } catch (error) {
     console.error("Add to theme error:", error);

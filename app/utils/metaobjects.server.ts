@@ -140,13 +140,29 @@ export async function deleteInstagramData(admin: any): Promise<ActionResponse> {
 }
 
 /**
- * Generate theme editor URL for adding app block
+ * Generate theme editor URL for adding app block with deep linking
+ * Uses Shopify's deep linking for simplified app block installation
+ * @see https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration#app-blocks
+ */
+export function generateAppEmbedUrl(shop: string, template: string = "index"): string {
+  const storeHandle = shop.replace(".myshopify.com", "");
+  const apiKey = process.env.SHOPIFY_API_KEY!;
+  const blockHandle = "instagram-carousel";
+
+  // Deep link to theme editor with app block pre-selected
+  // Format: addAppBlockId={client-id}/{block-handle}
+  return `https://admin.shopify.com/store/${storeHandle}/themes/current/editor?template=${template}&addAppBlockId=${apiKey}/${blockHandle}`;
+}
+
+/**
+ * Generate theme editor URL for adding app block (legacy method)
+ * @deprecated Use generateAppEmbedUrl for app embeds instead
  */
 export function generateThemeEditorUrl(
   shop: string,
   template: string,
 ): string {
-  const storeHandle = shop.replace(".myshopify.com", "");
+  const storeHandle = "near-native-apps-2.myshopify.com";
   // App block ID format: {client-id}/{block-filename}
   const appBlockId = "02fee5ebd0c35e7e65f2bdb8944e1ffa/instagram-carousel";
 

@@ -264,62 +264,245 @@ export default function Index() {
     useLoaderData<typeof loader>() as any;
   const navigate = useNavigate();
 
+  const isSetupComplete =
+    (existsList || createdList) && (existsPost || createdPost);
+  const hasErrors = errors && errors.length > 0;
+
   return (
     <AppProvider embedded apiKey={apiKey}>
       <s-app-nav>
-        <s-link href="/app">Home</s-link>
+        <s-link href="/app">Dashboard</s-link>
       </s-app-nav>
       <Outlet />
-      <div style={{ padding: "2rem" }}>
-        <h1>Welcome to your app 🎉</h1>
-        <p>This is the landing page of your Shopify app.</p>
 
-        {/* Metaobject status */}
-        <div
-          style={{
-            marginTop: "1rem",
-            padding: "1rem",
-            background: "#f5f5f5",
-            borderRadius: "4px",
-          }}
-        >
-          <h3>Metaobject Definition Status</h3>
-          {existsList && !createdList && (
-            <p>✅ Instagram List definition already exists</p>
-          )}
-          {createdList && (
-            <p>✅ Instagram List definition created successfully!</p>
-          )}
+      <s-page>
+        {/* Hero Section */}
+        <s-section>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "3rem 1rem",
+              maxWidth: "800px",
+              margin: "0 auto",
+            }}
+          >
+            <div style={{ fontSize: "48px", marginBottom: "1rem" }}>📸</div>
+            <div
+              style={{
+                fontSize: "32px",
+                marginBottom: "1rem",
+                fontWeight: "600",
+              }}
+            >
+              NN Instagram
+            </div>
+            <div style={{ fontSize: "18px", color: "#6d7175" }}>
+              Sync your Instagram posts to Shopify and display them beautifully
+              on your store
+            </div>
+          </div>
+        </s-section>
 
-          {existsPost && !createdPost && (
-            <p>✅ Instagram Post definition already exists</p>
-          )}
-          {createdPost && (
-            <p>✅ Instagram Post definition created successfully!</p>
-          )}
-          {errors &&
-            errors.length > 0 &&
-            (() => {
-              const errs: string[] = errors || [];
-              return (
-                <div style={{ color: "red" }}>
-                  <p>❌ Errors:</p>
-                  <ul>
-                    {errs.map((err: string, i: number) => (
-                      <li key={i}>{err}</li>
+        {/* Setup Status Card */}
+        <s-section>
+          <s-card>
+            <s-stack gap="base">
+              <s-stack direction="inline" gap="small-200">
+                <s-heading>App Setup</s-heading>
+                {isSetupComplete && !hasErrors && (
+                  <s-badge tone="success">Ready</s-badge>
+                )}
+                {hasErrors && (
+                  <s-badge tone="critical">Action Required</s-badge>
+                )}
+              </s-stack>
+
+              {/* Success Banner */}
+              {isSetupComplete && !hasErrors && (
+                <s-banner tone="success">
+                  <s-stack gap="small-200">
+                    <s-text type="strong">The app is ready to use!</s-text>
+                    <s-text>
+                      All required metaobject definitions have been created
+                      successfully.
+                    </s-text>
+                  </s-stack>
+                </s-banner>
+              )}
+
+              {/* Error Banner */}
+              {hasErrors && (
+                <s-banner tone="critical">
+                  <s-stack gap="small-200">
+                    <s-text type="strong">Setup encountered errors</s-text>
+                    <s-text>
+                      Please check the details below and contact support if the
+                      issue persists.
+                    </s-text>
+                  </s-stack>
+                </s-banner>
+              )}
+
+              <s-divider />
+
+              {/* Setup Details */}
+              <s-stack gap="base">
+                <s-text type="strong">Metaobject Definitions</s-text>
+
+                {/* Instagram Post Status */}
+                <s-stack gap="small-200" direction="inline">
+                  {(existsPost || createdPost) && !hasErrors ? (
+                    <s-icon type="check-circle" tone="success" />
+                  ) : (
+                    <s-icon type="alert-circle" tone="critical" />
+                  )}
+                  <s-stack gap="small-100">
+                    <s-text type="strong">Instagram Post</s-text>
+                    <s-text color="subdued">
+                      {createdPost && "Created during setup"}
+                      {existsPost && !createdPost && "Already configured"}
+                      {!existsPost && !createdPost && "Not configured"}
+                    </s-text>
+                  </s-stack>
+                </s-stack>
+
+                {/* Instagram List Status */}
+                <s-stack gap="small-200" direction="inline">
+                  {(existsList || createdList) && !hasErrors ? (
+                    <s-icon type="check-circle" tone="success" />
+                  ) : (
+                    <s-icon type="alert-circle" tone="critical" />
+                  )}
+                  <s-stack gap="small-100">
+                    <s-text type="strong">Instagram List</s-text>
+                    <s-text color="subdued">
+                      {createdList && "Created during setup"}
+                      {existsList && !createdList && "Already configured"}
+                      {!existsList && !createdList && "Not configured"}
+                    </s-text>
+                  </s-stack>
+                </s-stack>
+              </s-stack>
+
+              {/* Error Details */}
+              {hasErrors && (
+                <>
+                  <s-divider />
+                  <s-stack gap="small-200">
+                    <s-text type="strong">Error Details:</s-text>
+                    {errors.map((err: string, i: number) => (
+                      <s-text key={i} color="subdued">
+                        • {err}
+                      </s-text>
                     ))}
-                  </ul>
-                </div>
-              );
-            })()}
-        </div>
+                  </s-stack>
+                </>
+              )}
 
-        <div style={{ marginTop: "1rem" }}>
-          <s-button variant="primary" onClick={() => navigate("/app")}>
-            Go to App Dashboard
-          </s-button>
-        </div>
-      </div>
+              {/* Action Button */}
+              {isSetupComplete && !hasErrors && (
+                <>
+                  <s-divider />
+                  <s-box>
+                    <s-button
+                      variant="primary"
+                      onClick={() => navigate("/app")}
+                    >
+                      Go to Dashboard →
+                    </s-button>
+                  </s-box>
+                </>
+              )}
+            </s-stack>
+          </s-card>
+        </s-section>
+
+        {/* Features Section */}
+        <s-section>
+          <s-card>
+            <s-stack gap="base">
+              <s-heading>What You Can Do</s-heading>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                  gap: "1.5rem",
+                  marginTop: "1rem",
+                }}
+              >
+                {/* Feature 1 */}
+                <s-stack gap="small-200">
+                  <s-icon type="connect" />
+                  <s-text type="strong">Connect Instagram</s-text>
+                  <s-text color="subdued">
+                    Link your Instagram Business account in seconds
+                  </s-text>
+                </s-stack>
+
+                {/* Feature 2 */}
+                <s-stack gap="small-200">
+                  <s-icon type="refresh" />
+                  <s-text type="strong">Auto Sync</s-text>
+                  <s-text color="subdued">
+                    Posts sync automatically every 24 hours
+                  </s-text>
+                </s-stack>
+
+                {/* Feature 3 */}
+                <s-stack gap="small-200">
+                  <s-icon type="settings" />
+                  <s-text type="strong">Customizable Display</s-text>
+                  <s-text color="subdued">
+                    Add beautiful Instagram feeds to any page
+                  </s-text>
+                </s-stack>
+              </div>
+            </s-stack>
+          </s-card>
+        </s-section>
+
+        {/* Next Steps */}
+        {isSetupComplete && !hasErrors && (
+          <s-section>
+            <s-card>
+              <s-stack gap="base">
+                <s-heading>Next Steps</s-heading>
+
+                <s-stack gap="small-200">
+                  <s-stack gap="small-100">
+                    <s-text type="strong">1. Connect Your Account</s-text>
+                    <s-text color="subdued">
+                      Head to the dashboard and connect your Instagram Business
+                      account
+                    </s-text>
+                  </s-stack>
+
+                  <s-stack gap="small-100">
+                    <s-text type="strong">2. Sync Your Posts</s-text>
+                    <s-text color="subdued">
+                      Import your Instagram posts with one click
+                    </s-text>
+                  </s-stack>
+
+                  <s-stack gap="small-100">
+                    <s-text type="strong">3. Add to Your Theme</s-text>
+                    <s-text color="subdued">
+                      Display your Instagram feed on any page of your store
+                    </s-text>
+                  </s-stack>
+                </s-stack>
+
+                <s-divider />
+
+                <s-button variant="primary" onClick={() => navigate("/app")}>
+                  Get Started →
+                </s-button>
+              </s-stack>
+            </s-card>
+          </s-section>
+        )}
+      </s-page>
     </AppProvider>
   );
 }

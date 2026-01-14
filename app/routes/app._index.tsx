@@ -13,20 +13,18 @@ import { useState, useEffect } from "react";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-
-interface SyncStats {
-  lastSyncTime: string | null;
-  postsCount: number;
-  filesCount: number;
-  metaobjectsCount: number;
-}
-
-interface InstagramAccount {
-  username: string;
-  userId: string;
-  profilePicture?: string;
-  connectedAt: string;
-}
+import type { LoaderData, InstagramAccount } from "../types/instagram.types";
+import {
+  getInstagramProfile,
+  getSyncStats,
+  getThemePages,
+} from "../utils/instagram.server";
+import {
+  handleSyncAction,
+  handleDeleteDataAction,
+  handleDisconnectAction,
+  handleAddToThemeAction,
+} from "../utils/actions.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
@@ -42,8 +40,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 
   let instagramAccount: InstagramAccount | null = null;
-  let syncStats: SyncStats = {
-    lastSyncTime: null,
+  let syncStats = {
+    lastSyncTime: null as string | null,
     postsCount: 0,
     filesCount: 0,
     metaobjectsCount: 0,
@@ -51,126 +49,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   if (socialAccount) {
     // Fetch Instagram profile info
-    try {
-      const profileResponse = await fetch(
-        `https://graph.instagram.com/me?fields=id,username,profile_picture_url,media_count&access_token=${socialAccount.accessToken}`,
-      );
-      const profileData = await profileResponse.json();
-
+    const profile = await getInstagramProfile(socialAccount.accessToken);
+    if (profile) {
       instagramAccount = {
-        username: profileData.username || "Unknown",
-        userId: profileData.id,
-        profilePicture: profileData.profile_picture_url,
+        ...profile,
         connectedAt: socialAccount.createdAt.toISOString(),
       };
-    } catch (error) {
-      console.error("Error fetching Instagram profile:", error);
     }
 
     // Get sync statistics from Shopify
-    try {
-      // Count instagram-post metaobjects (type filter ensures only instagram-post type)
-      const postsCountQuery = await admin.graphql(`#graphql
-        query {
-          metaobjects(type: "instagram-post", first: 250) {
-            nodes {
-              id
-            }
-          }
-        }
-      `);
-      const postsCountData = await postsCountQuery.json();
-
-      // Get instagram-list metaobject and last sync time
-      const listQuery = await admin.graphql(`#graphql
-        query {
-          metaobjects(type: "instagram-list", first: 1) {
-            nodes {
-              id
-              fields {
-                key
-                value
-              }
-              updatedAt
-            }
-          }
-        }
-      `);
-      const listData = await listQuery.json();
-
-      // Count files with instagram-post prefix in alt text
-      // Using "instagram-post_" prefix to match our file naming convention
-      const filesCountQuery = await admin.graphql(`#graphql
-        query {
-          files(first: 250, query: "alt:instagram-post_") {
-            edges {
-              node {
-                id
-                alt
-              }
-            }
-          }
-        }
-      `);
-      const filesCountData = await filesCountQuery.json();
-
-      // Filter files to only those starting with "instagram"
-      const instagramFiles =
-        filesCountData.data?.files?.edges?.filter((edge: any) =>
-          edge.node.alt?.startsWith("instagram"),
-        ) || [];
-
-      // Calculate metaobjects count: posts + list (if exists)
-      const postsCount = postsCountData.data?.metaobjects?.nodes?.length || 0;
-      const hasListMetaobject =
-        (listData.data?.metaobjects?.nodes?.length || 0) > 0;
-
-      syncStats = {
-        lastSyncTime: listData.data?.metaobjects?.nodes?.[0]?.updatedAt || null,
-        postsCount: postsCount,
-        filesCount: instagramFiles.length,
-        metaobjectsCount: postsCount + (hasListMetaobject ? 1 : 0),
-      };
-    } catch (error) {
-      console.error("Error fetching sync stats:", error);
-    }
+    syncStats = await getSyncStats(admin);
   }
 
   // Fetch theme pages (templates) for app block installation
-  let themePages: Array<{ label: string; value: string }> = [];
-  try {
-    // Get the published theme
-    const themesQuery = await admin.graphql(`
-      #graphql
-      query {
-        themes(first: 1, roles: MAIN) {
-          nodes {
-            id
-            name
-            role
-          }
-        }
-      }
-    `);
-    const themesData = await themesQuery.json();
-    const publishedTheme = themesData.data?.themes?.nodes?.[0];
-
-    if (publishedTheme) {
-      // Common Shopify theme templates
-      themePages = [
-        { label: "Home Page", value: "index" },
-        { label: "Product Page", value: "product" },
-        { label: "Collection Page", value: "collection" },
-        { label: "Page", value: "page" },
-        { label: "Blog", value: "blog" },
-        { label: "Article", value: "article" },
-        { label: "Cart", value: "cart" },
-        { label: "Search", value: "search" },
-      ];
-    }
-  } catch (error) {
-    console.error("Error fetching theme pages:", error);
-  }
+  const themePages = await getThemePages(admin);
 
   return {
     shop: session.shop,
@@ -187,293 +79,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const actionType = formData.get("action");
 
   if (actionType === "sync") {
-    try {
-      // Trigger the sync by calling the instagram sync endpoint
-      const syncUrl = new URL(request.url);
-      syncUrl.pathname = "/api/instagram/staged-upload";
-
-      const response = await fetch(syncUrl.toString(), {
-        headers: {
-          Cookie: request.headers.get("Cookie") || "",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Sync failed");
-      }
-
-      return { success: true, message: "Sync completed successfully!" };
-    } catch (error) {
-      return {
-        success: false,
-        message: "Sync failed. Please try again.",
-      };
-    }
+    return await handleSyncAction(request);
   }
 
   if (actionType === "delete-data") {
-    try {
-      // Delete all Instagram data directly
-      // Query instagram_post metaobjects
-      const postMetaobjectsQuery = await admin.graphql(`
-        #graphql
-        query {
-          metaobjects(type: "instagram-post", first: 250) {
-            edges { node { id } }
-          }
-        }
-      `);
-      const postMetaobjectsJson = await postMetaobjectsQuery.json();
-      const postMetaobjectIds =
-        postMetaobjectsJson.data?.metaobjects?.edges?.map(
-          (e: any) => e.node.id,
-        ) || [];
-
-      // Query instagram_list metaobjects
-      const listMetaobjectsQuery = await admin.graphql(`
-        #graphql
-        query {
-          metaobjects(type: "instagram-list", first: 10) {
-            edges { node { id } }
-          }
-        }
-      `);
-      const listMetaobjectsJson = await listMetaobjectsQuery.json();
-      const listMetaobjectIds =
-        listMetaobjectsJson.data?.metaobjects?.edges?.map(
-          (e: any) => e.node.id,
-        ) || [];
-
-      // Delete all metaobjects
-      for (const id of [...postMetaobjectIds, ...listMetaobjectIds]) {
-        await admin.graphql(
-          `
-          #graphql
-          mutation metaobjectDelete($id: ID!) {
-            metaobjectDelete(id: $id) {
-              deletedId
-              userErrors { field message }
-            }
-          }
-        `,
-          { variables: { id } },
-        );
-      }
-
-      // Delete ONLY files created by this app (with instagram-post_ prefix in alt text)
-      const filesQuery = await admin.graphql(`
-        #graphql
-        query {
-          files(first: 250, query: "alt:instagram-post_") {
-            edges { 
-              node { 
-                id 
-                alt
-              } 
-            }
-          }
-        }
-      `);
-      const filesJson = await filesQuery.json();
-
-      // Filter to ONLY files with alt text starting with "instagram-post_"
-      const instagramFiles =
-        filesJson.data?.files?.edges?.filter((edge: any) =>
-          edge.node.alt?.startsWith("instagram-post_"),
-        ) || [];
-
-      const fileIds = instagramFiles.map((edge: any) => edge.node.id);
-
-      if (fileIds.length > 0) {
-        await admin.graphql(
-          `
-          #graphql
-          mutation fileDelete($fileIds: [ID!]!) {
-            fileDelete(fileIds: $fileIds) {
-              deletedFileIds
-              userErrors { field message }
-            }
-          }
-        `,
-          { variables: { fileIds } },
-        );
-      }
-
-      const totalMetaobjects =
-        postMetaobjectIds.length + listMetaobjectIds.length;
-      console.log(
-        `✓ Deleted ${totalMetaobjects} metaobjects and ${fileIds.length} files`,
-      );
-
-      return {
-        success: true,
-        deletedMetaobjects: totalMetaobjects,
-        deletedFiles: fileIds.length,
-        message: `Deleted ${totalMetaobjects} metaobjects and ${fileIds.length} files`,
-      };
-    } catch (error) {
-      console.error("Delete error:", error);
-      return {
-        success: false,
-        message: "Delete failed. Please try again.",
-        status: 500,
-      };
-    }
+    return await handleDeleteDataAction(admin);
   }
 
   if (actionType === "disconnect") {
-    try {
-      // First delete all Instagram data
-      // Query instagram_post metaobjects
-      const postMetaobjectsQuery = await admin.graphql(`
-        #graphql
-        query {
-          metaobjects(type: "instagram-post", first: 250) {
-            edges { node { id } }
-          }
-        }
-      `);
-      const postMetaobjectsJson = await postMetaobjectsQuery.json();
-      const postMetaobjectIds =
-        postMetaobjectsJson.data?.metaobjects?.edges?.map(
-          (e: any) => e.node.id,
-        ) || [];
-
-      // Query instagram_list metaobjects
-      const listMetaobjectsQuery = await admin.graphql(`
-        #graphql
-        query {
-          metaobjects(type: "instagram-list", first: 10) {
-            edges { node { id } }
-          }
-        }
-      `);
-      const listMetaobjectsJson = await listMetaobjectsQuery.json();
-      const listMetaobjectIds =
-        listMetaobjectsJson.data?.metaobjects?.edges?.map(
-          (e: any) => e.node.id,
-        ) || [];
-
-      // Delete all metaobjects
-      for (const id of [...postMetaobjectIds, ...listMetaobjectIds]) {
-        await admin.graphql(
-          `
-          #graphql
-          mutation metaobjectDelete($id: ID!) {
-            metaobjectDelete(id: $id) {
-              deletedId
-              userErrors { field message }
-            }
-          }
-        `,
-          { variables: { id } },
-        );
-      }
-
-      // Delete ONLY files created by this app (with instagram-post_ prefix in alt text)
-      const filesQuery = await admin.graphql(`
-        #graphql
-        query {
-          files(first: 250, query: "alt:instagram-post_") {
-            edges { 
-              node { 
-                id 
-                alt
-              } 
-            }
-          }
-        }
-      `);
-      const filesJson = await filesQuery.json();
-
-      // Filter to ONLY files with alt text starting with "instagram-post_"
-      const instagramFiles =
-        filesJson.data?.files?.edges?.filter((edge: any) =>
-          edge.node.alt?.startsWith("instagram-post_"),
-        ) || [];
-
-      const fileIds = instagramFiles.map((edge: any) => edge.node.id);
-
-      if (fileIds.length > 0) {
-        await admin.graphql(
-          `
-          #graphql
-          mutation fileDelete($fileIds: [ID!]!) {
-            fileDelete(fileIds: $fileIds) {
-              deletedFileIds
-              userErrors { field message }
-            }
-          }
-        `,
-          { variables: { fileIds } },
-        );
-      }
-
-      // Then remove the social account connection
-      await prisma.socialAccount.delete({
-        where: {
-          shop_provider: {
-            shop: session.shop,
-            provider: "instagram",
-          },
-        },
-      });
-
-      const totalMetaobjects =
-        postMetaobjectIds.length + listMetaobjectIds.length;
-      console.log(
-        `✓ Disconnected account and deleted ${totalMetaobjects} metaobjects and ${fileIds.length} files`,
-      );
-
-      return {
-        success: true,
-        deletedMetaobjects: totalMetaobjects,
-        deletedFiles: fileIds.length,
-        message: `Disconnected and deleted ${totalMetaobjects} metaobjects and ${fileIds.length} files`,
-      };
-    } catch (error) {
-      console.error("Disconnect error:", error);
-      return {
-        success: false,
-        message: "Disconnect failed. Please try again.",
-        status: 500,
-      };
-    }
+    return await handleDisconnectAction(admin, session.shop);
   }
 
   if (actionType === "add-to-theme") {
-    const selectedTemplate = formData.get("template");
-    
-    if (!selectedTemplate) {
-      return {
-        success: false,
-        message: "Please select a page",
-        status: 400,
-      };
-    }
-
-    try {
-      // Note: Shopify doesn't provide a direct API to programmatically add app blocks to themes
-      // We need to redirect to the theme editor with the app block pre-selected
-      const storeHandle = session.shop.replace(".myshopify.com", "");
-      // App block ID format: {client-id}/{block-filename}
-      // The block filename is the .liquid file name without extension
-      const appBlockId = "02fee5ebd0c35e7e65f2bdb8944e1ffa/instagram-carousel";
-      
-      // Return the URL for the client to open
-      return {
-        success: true,
-        redirectUrl: `https://admin.shopify.com/store/${storeHandle}/themes/current/editor?template=${selectedTemplate}&addAppBlockId=${appBlockId}`,
-        message: `Opening theme editor for ${selectedTemplate} page...`,
-      };
-    } catch (error) {
-      console.error("Add to theme error:", error);
-      return {
-        success: false,
-        message: "Failed to open theme editor. Please try again.",
-        status: 500,
-      };
-    }
+    const template = formData.get("template") as string | undefined;
+    return await handleAddToThemeAction(session.shop, template);
   }
 
   return { success: false, message: "Invalid action", status: 400 };
@@ -492,6 +111,7 @@ export default function Index() {
   const [syncProgress, setSyncProgress] = useState(0);
   const [deleteMessage, setDeleteMessage] = useState<string>("");
   const [selectedPage, setSelectedPage] = useState<string>("index");
+  const [showPageModal, setShowPageModal] = useState(false);
 
   const isActionRunning =
     navigation.state === "submitting" || fetcher.state === "submitting";
@@ -628,15 +248,16 @@ export default function Index() {
   };
 
   const handleAddToTheme = () => {
-    if (!selectedPage) {
-      alert("Please select a page first");
-      return;
-    }
+    // Show modal to select page
+    setShowPageModal(true);
+  };
 
+  const handleAddToThemeWithPage = (template: string) => {
     const formData = new FormData();
     formData.append("action", "add-to-theme");
-    formData.append("template", selectedPage);
+    formData.append("template", template);
     themeFetcher.submit(formData, { method: "post" });
+    setShowPageModal(false);
   };
 
   const formatDate = (dateString: string | null) => {
@@ -656,8 +277,232 @@ export default function Index() {
     return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
   };
 
+  // Calculate setup progress
+  const hasPosts = syncStats.postsCount > 0;
+  const hasAddedToTheme = false; // You could track this in your database if needed
+
+  type Step = {
+    id: number;
+    title: string;
+    description: string;
+    completed: boolean;
+    current: boolean;
+    action: () => void;
+    actionLabel: string;
+    iconType: "social-post" | "refresh" | "theme";
+    disabled?: boolean;
+    optional?: boolean;
+  };
+
+  const steps: Step[] = [
+    {
+      id: 1,
+      title: "Connect Instagram",
+      description: "Link your Instagram Business account",
+      completed: isConnected,
+      current: !isConnected,
+      action: handleConnect,
+      actionLabel: "Connect Account",
+      iconType: "social-post" as const,
+    },
+    {
+      id: 2,
+      title: "Sync Posts",
+      description: "Import your Instagram posts to Shopify",
+      completed: hasPosts,
+      current: isConnected && !hasPosts,
+      action: handleSync,
+      actionLabel: "Sync Now",
+      iconType: "refresh" as const,
+      disabled: !isConnected,
+    },
+  ];
+
+  // Add to Theme is optional and not counted in progress
+  const optionalSteps = [
+    {
+      id: 3,
+      title: "Add to Theme",
+      description:
+        "Add the Instagram feed block to your store pages (optional)",
+      completed: hasAddedToTheme,
+      current: false, // Never show as current step
+      action: handleAddToTheme,
+      actionLabel: "Add to Theme",
+      iconType: "theme" as const,
+      disabled: !isConnected || !hasPosts,
+      optional: true,
+    },
+  ];
+
+  const allSteps = [...steps, ...optionalSteps];
+  const completedSteps = steps.filter((step) => step.completed).length;
+  const progressPercentage = (completedSteps / steps.length) * 100;
+
   return (
     <s-page>
+      {/* Progress Steps Card */}
+      <s-section>
+        <s-card>
+          <s-stack gap="base">
+            <s-stack direction="inline" gap="small-200">
+              <s-heading>Getting Started</s-heading>
+              <s-badge
+                tone={completedSteps === steps.length ? "success" : "info"}
+              >
+                {completedSteps} of {steps.length} completed
+              </s-badge>
+            </s-stack>
+
+            {/* Progress Bar - Using div with Polaris CSS variables */}
+            <s-box padding="none" background="subdued" borderRadius="base">
+              <div
+                style={{
+                  width: `${progressPercentage}%`,
+                  height: "8px",
+                  background:
+                    completedSteps === steps.length
+                      ? "var(--p-color-bg-success)"
+                      : "var(--p-color-bg-info)",
+                  transition: "width 0.5s ease",
+                  borderRadius: "var(--p-border-radius-100)",
+                }}
+              />
+            </s-box>
+
+            {/* Steps List */}
+            <s-stack gap="base">
+              {allSteps.map((step, index) => (
+                <s-box key={step.id}>
+                  <s-stack gap="small-200" direction="inline">
+                    {/* Step Icon/Status - Using div wrapper for custom styling */}
+                    <div
+                      style={{
+                        minWidth: "40px",
+                        height: "40px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "50%",
+                        background: step.completed
+                          ? "var(--p-color-bg-success)"
+                          : step.current
+                            ? "var(--p-color-bg-info)"
+                            : "var(--p-color-bg-subdued)",
+                        padding: "var(--p-space-200)",
+                      }}
+                    >
+                      {step.completed ? (
+                        <s-icon type="check" tone="success" />
+                      ) : (
+                        <s-icon
+                          type={step.iconType}
+                          tone={step.current ? "info" : undefined}
+                        />
+                      )}
+                    </div>
+
+                    {/* Step Content - Using div wrapper for flex */}
+                    <div style={{ flex: 1 }}>
+                      <s-stack gap="small-100">
+                        <s-stack direction="inline" gap="small-200">
+                          <s-text type="strong">{step.title}</s-text>
+                          {step.completed && (
+                            <s-badge tone="success">Completed</s-badge>
+                          )}
+                          {step.current && !step.completed && (
+                            <s-badge tone="info">In Progress</s-badge>
+                          )}
+                          {step.optional && (
+                            <s-badge tone="neutral">Optional</s-badge>
+                          )}
+                        </s-stack>
+                        <s-text color="subdued">{step.description}</s-text>
+
+                        {/* Action Button */}
+                        {!step.completed && (step.current || step.optional) && (
+                          <s-box>
+                            {step.id === 3 && showPageModal ? (
+                              // Show page selector for "Add to Theme" step
+                              <s-stack gap="small-200">
+                                <s-text type="strong">Select a page:</s-text>
+                                {themePages.map((page) => (
+                                  <s-clickable
+                                    key={page.value}
+                                    onClick={() =>
+                                      handleAddToThemeWithPage(page.value)
+                                    }
+                                    border="base"
+                                    borderRadius="base"
+                                    padding="small-400"
+                                  >
+                                    <s-stack direction="inline" gap="small-200">
+                                      <s-icon
+                                        type={
+                                          page.value === "index"
+                                            ? "home"
+                                            : page.value === "product"
+                                              ? "product"
+                                              : page.value === "collection"
+                                                ? "collection"
+                                                : "page"
+                                        }
+                                      />
+                                      <div style={{ flex: 1 }}>
+                                        <s-text>{page.label}</s-text>
+                                      </div>
+                                      <s-badge tone="info">Inactive</s-badge>
+                                    </s-stack>
+                                  </s-clickable>
+                                ))}
+                                <s-button
+                                  onClick={() => setShowPageModal(false)}
+                                >
+                                  Cancel
+                                </s-button>
+                              </s-stack>
+                            ) : (
+                              <s-button
+                                onClick={step.action}
+                                disabled={
+                                  step.disabled || isActionRunning || isSyncing
+                                }
+                                variant={step.current ? "primary" : undefined}
+                              >
+                                {step.actionLabel}
+                              </s-button>
+                            )}
+                          </s-box>
+                        )}
+                      </s-stack>
+                    </div>
+                  </s-stack>
+
+                  {/* Divider between steps */}
+                  {index < allSteps.length - 1 && <s-divider />}
+                </s-box>
+              ))}
+            </s-stack>
+
+            {/* Completion Message */}
+            {completedSteps === steps.length && (
+              <>
+                <s-divider />
+                <s-banner tone="success">
+                  <s-stack gap="small-200">
+                    <s-text type="strong">🎉 All set up!</s-text>
+                    <s-text>
+                      Your Instagram feed is now synced and ready to display on
+                      your store. You can manage your posts and settings below.
+                    </s-text>
+                  </s-stack>
+                </s-banner>
+              </>
+            )}
+          </s-stack>
+        </s-card>
+      </s-section>
+
       {/* Delete Success Banner */}
       {deleteMessage && (
         <s-section>
@@ -895,97 +740,6 @@ export default function Index() {
                     </s-stack>
                   </s-clickable>
                 </div>
-              </s-stack>
-            </s-card>
-          </s-section>
-
-          {/* Theme App Extension - Enable App Block */}
-          <s-section>
-            <s-card>
-              <s-stack gap="base">
-                <s-stack gap="small-200">
-                  <s-heading>Add Instagram Feed to Your Theme</s-heading>
-                  <s-text color="subdued">
-                    Choose a page and add the Instagram Feed app block with one click
-                  </s-text>
-                </s-stack>
-
-                <s-banner tone="info">
-                  <s-stack gap="small-500">
-                    <s-text type="strong">How it works</s-text>
-                    <s-text>
-                      1. Select a page from the dropdown below
-                    </s-text>
-                    <s-text>
-                      2. Click "Add to Theme" to open the Theme Editor
-                    </s-text>
-                    <s-text>
-                      3. The Instagram Feed block will be ready to add to your selected page
-                    </s-text>
-                  </s-stack>
-                </s-banner>
-
-                <s-stack gap="base">
-                  <s-stack gap="small-200">
-                    <s-text type="strong">Select a page:</s-text>
-                    <select
-                      value={selectedPage}
-                      onChange={(e) => setSelectedPage(e.target.value)}
-                      style={{
-                        padding: "8px 12px",
-                        borderRadius: "4px",
-                        border: "1px solid #c9cccf",
-                        fontSize: "14px",
-                        width: "100%",
-                        maxWidth: "300px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {themePages.map((page) => (
-                        <option key={page.value} value={page.value}>
-                          {page.label}
-                        </option>
-                      ))}
-                    </select>
-                  </s-stack>
-
-                  <s-stack gap="small-200" direction="inline">
-                    <s-button 
-                      variant="primary" 
-                      onClick={handleAddToTheme}
-                      loading={themeFetcher.state === "submitting"}
-                    >
-                      Add to Theme
-                    </s-button>
-
-                    <s-clickable
-                      href={`https://admin.shopify.com/store/${shop.replace(
-                        ".myshopify.com",
-                        "",
-                      )}/themes`}
-                      target="_blank"
-                    >
-                      <s-button>View All Themes</s-button>
-                    </s-clickable>
-                  </s-stack>
-                </s-stack>
-
-                <s-divider />
-
-                <s-stack gap="small-200">
-                  <s-text type="strong">What's included:</s-text>
-                  <s-text>
-                    • Instagram Carousel - A beautiful, responsive carousel
-                    displaying your synced posts
-                  </s-text>
-                  <s-text>
-                    • Fully customizable styling and layout options in the Theme
-                    Editor
-                  </s-text>
-                  <s-text>
-                    • Automatic updates when you sync new Instagram posts
-                  </s-text>
-                </s-stack>
               </s-stack>
             </s-card>
           </s-section>

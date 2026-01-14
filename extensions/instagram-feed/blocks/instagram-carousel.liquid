@@ -1,83 +1,71 @@
 {% comment %} Instagram Feed {% endcomment %}
 {% assign lists = metaobjects['instagram-list']['instagram-feed-list'] %}
 
-<header>
-  <h2>Instagram Feed</h2>
-</header>
-<section class="instagram-feed">
-  <div class="scroll-left" role="button" aria-label="Scroll left" tabindex="0">
-    <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
-    </svg>
-  </div>
-  <div class="fade-left" aria-hidden="true"></div>
-  {% for post in lists.posts.value %}
-    <div
-      class="instagram-card"
-      data-index="{{ forloop.index0 }}"
-    >
-      {% for media in post.images.value limit: 1 %}
-        {% if media.sources %}
-          {{ media | video_tag: autoplay: true, loop: true, muted: true, class: 'instagram-video' }}
-        {% else %}
-          <img
-            class="instagram-image"
-            src="{{ media | image_url: width: 800, height: 1200, crop: 'center' }}"
-            width="320"
-            height="480"
-            alt="Instagram Post Image"
-          >
-        {% endif %}
-      {% endfor %}
-      <div class="overlay">
-        <div class="stats">
-          <span class="likes">
-            {{ post.likes.value }}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              xmlns:xlink="http://www.w3.org/1999/xlink"
-              version="1.1"
-              width="20"
-              height="20"
-              viewBox="0 0 256 256"
-              xml:space="preserve"
+<div class="instagram-feed-container">
+  {% if block.settings.show_header %}
+    <header>
+      <h2>Instagram Feed</h2>
+    </header>
+  {% endif %}
+  <section class="instagram-feed">
+    <div class="scroll-left" role="button" aria-label="Scroll left" tabindex="0">
+      <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z" />
+      </svg>
+    </div>
+    <div class="fade-left" aria-hidden="true"></div>
+    {% for post in lists.posts.value %}
+      <div
+        class="instagram-card"
+        data-index="{{ forloop.index0 }}"
+      >
+        {% for media in post.images.value limit: 1 %}
+          {% if media.sources %}
+            {{ media | video_tag: autoplay: true, loop: true, muted: true, class: 'instagram-video' }}
+          {% else %}
+            <img
+              class="instagram-image"
+              src="{{ media | image_url: width: 800, height: 1200, crop: 'center' }}"
+              width="320"
+              height="480"
+              alt="Instagram Post Image"
             >
-              <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
-              	<path d="M 7.486 13.502 c 9.982 -9.982 26.165 -9.982 36.147 0 L 45 14.869 l 0 0 c 6.895 22.882 6.259 47.092 0 72.294 L 26.927 69.089 c 0 0 0 0 0 0 l -19.44 -19.44 C -2.495 39.667 -2.495 23.484 7.486 13.502 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgba(255, 255, 255, 1); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
-              	<path d="M 82.514 13.502 c -9.982 -9.982 -26.165 -9.982 -36.147 0 L 45 14.869 l 0 0 v 72.294 l 18.073 -18.073 c 0 0 0 0 0 0 l 19.44 -19.44 C 92.495 39.667 92.495 23.484 82.514 13.502 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgba(255, 255, 255, 1); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
-              </g>
-            </svg>
-          </span>
-          <span class="comments">
-            {{ post.comments.value }}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              xmlns:xlink="http://www.w3.org/1999/xlink"
-              version="1.1"
-              width="20"
-              height="20"
-              viewBox="0 0 256 256"
-              xml:space="preserve"
-            >
-              <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
-              	<path d="M 86.999 90 c -0.367 0 -0.737 -0.067 -1.092 -0.206 l -17.016 -6.655 C 61.734 87.633 53.509 90 45 90 C 20.187 90 0 69.813 0 45 C 0 20.187 20.187 0 45 0 c 24.813 0 45 20.187 45 45 c 0 8.509 -2.367 16.734 -6.861 23.892 l 6.655 17.016 c 0.434 1.11 0.17 2.371 -0.673 3.214 C 88.548 89.694 87.78 90 86.999 90 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(255,255,255); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
-              </g>
-            </svg>
-          </span>
+          {% endif %}
+        {% endfor %}
+        <div class="overlay">
+          <svg width="48px" height="48px" fill="#ffffffff" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <g id="SVGRepo_bgCarrier" stroke-width="2"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><title></title><path d="M44,57H20A13,13,0,0,1,7,44V20A13,13,0,0,1,20,7H44A13,13,0,0,1,57,20V44A13,13,0,0,1,44,57ZM20,9A11,11,0,0,0,9,20V44A11,11,0,0,0,20,55H44A11,11,0,0,0,55,44V20A11,11,0,0,0,44,9Z"></path><path d="M32,43.67A11.67,11.67,0,1,1,43.67,32,11.68,11.68,0,0,1,32,43.67Zm0-21.33A9.67,9.67,0,1,0,41.67,32,9.68,9.68,0,0,0,32,22.33Z"></path><path d="M44.5,21A3.5,3.5,0,1,1,48,17.5,3.5,3.5,0,0,1,44.5,21Zm0-5A1.5,1.5,0,1,0,46,17.5,1.5,1.5,0,0,0,44.5,16Z"></path></g>
+          </svg>
+          <div class="stats">
+            <span class="likes">
+              {{ post.likes.value }}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+            </span>
+            <span class="comments">
+              {{ post.comments.value }}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+              </svg>
+            </span>
+          </div>
         </div>
       </div>
+    {% endfor %}
+    <div class="scroll-right" role="button" aria-label="Scroll right" tabindex="0">
+      <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
+      </svg>
     </div>
-  {% endfor %}
-  <div class="scroll-right" role="button" aria-label="Scroll right" tabindex="0">
-    <svg class="arrow-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z" />
-    </svg>
-  </div>
-  <div class="fade-right" aria-hidden="true"></div>
-</section>
-<footer>
-  <h4>@{{ lists.username }}</h4>
-</footer>
+    <div class="fade-right" aria-hidden="true"></div>
+  </section>
+  {% if block.settings.show_handle %}
+    <footer>
+      <h4>@{{ lists.username }}</h4>
+    </footer>
+  {% endif %}
+</div>
 
 <div class="modal" aria-hidden="true">
   <div class="modal-posts-container">
@@ -138,6 +126,9 @@
 
         <!-- Details box below image -->
         <div class="details-box">
+          <svg width="48px" height="48px" fill="#ffffffff" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <g id="SVGRepo_bgCarrier" stroke-width="2"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><title></title><path d="M44,57H20A13,13,0,0,1,7,44V20A13,13,0,0,1,20,7H44A13,13,0,0,1,57,20V44A13,13,0,0,1,44,57ZM20,9A11,11,0,0,0,9,20V44A11,11,0,0,0,20,55H44A11,11,0,0,0,55,44V20A11,11,0,0,0,44,9Z"></path><path d="M32,43.67A11.67,11.67,0,1,1,43.67,32,11.68,11.68,0,0,1,32,43.67Zm0-21.33A9.67,9.67,0,1,0,41.67,32,9.68,9.68,0,0,0,32,22.33Z"></path><path d="M44.5,21A3.5,3.5,0,1,1,48,17.5,3.5,3.5,0,0,1,44.5,21Zm0-5A1.5,1.5,0,1,0,46,17.5,1.5,1.5,0,0,0,44.5,16Z"></path></g>
+          </svg>
           <div class="post-stats-row">
             <span class="stat-item">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -189,7 +180,7 @@
 
     function showCurrentPost(direction = 0) {
       const allPosts = modal.querySelectorAll('.modal-post');
-      
+
       // FIRST: Instantly hide all posts and reset their state
       allPosts.forEach((post) => {
         post.style.transition = 'none';
@@ -219,10 +210,10 @@
         // Set starting position for animation
         currentPost.style.transform = `translateX(${direction > 0 ? '8%' : '-8%'})`;
         currentPost.style.opacity = '0';
-        
+
         // Force browser to apply these styles
         void currentPost.offsetHeight;
-        
+
         // Animate to final position
         requestAnimationFrame(() => {
           currentPost.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
@@ -264,10 +255,10 @@
         // Set starting position for animation
         currentSlide.style.transform = `translateX(${direction > 0 ? '8%' : '-8%'})`;
         currentSlide.style.opacity = '0';
-        
+
         // Force browser to apply these styles
         void currentSlide.offsetHeight;
-        
+
         // Animate to final position
         requestAnimationFrame(() => {
           currentSlide.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
@@ -710,6 +701,19 @@
 </script>
 
 <style>
+  /* CSS Variables for block settings */
+  :root {
+    --card-border-radius: {{ block.settings.border_radius | default: 24 }}px;
+    --card-gap: {{ block.settings.gap | default: 32 }}px;
+    --card-aspect-ratio: {% if block.settings.aspect_ratio == 'square' %}1 / 1{% else %}4 / 6{% endif %};
+    --block-padding-vertical: {{ block.settings.padding_top_bottom | default: 0 }}px;
+    --block-padding-horizontal: {{ block.settings.padding_left_right | default: 0 }}px;
+  }
+
+  .instagram-feed-container {
+    padding: var(--block-padding-vertical) var(--block-padding-horizontal);
+  }
+
   header {
   }
 
@@ -719,7 +723,7 @@
     overflow-x: auto;
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* Internet Explorer 10+ */
-    gap: 2em;
+    gap: var(--card-gap);
     cursor: grab;
     -webkit-overflow-scrolling: touch;
   }
@@ -732,7 +736,7 @@
   .instagram-card {
     position: relative;
     flex: 0 0 auto;
-    aspect-ratio: 4 / 6;
+    aspect-ratio: var(--card-aspect-ratio);
     cursor: pointer;
   }
   .overlay {
@@ -743,7 +747,7 @@
     background: rgba(0, 0, 0, 0.7);
     pointer-events: none;
     transition: opacity 240ms ease, transform 240ms ease;
-    border-radius: 24px;
+    border-radius: var(--card-border-radius);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -791,7 +795,7 @@
     width: 320px;
     height: 100%;
     object-fit: cover;
-    border-radius: 24px;
+    border-radius: var(--card-border-radius);
     display: block;
     background: #111;
     user-select: none;
@@ -1214,6 +1218,74 @@
       "max": 24,
       "step": 1,
       "default": 12
+    },
+    {
+      "type": "select",
+      "id": "aspect_ratio",
+      "label": "Card aspect ratio",
+      "options": [
+        {
+          "value": "portrait",
+          "label": "Portrait (4:6)"
+        },
+        {
+          "value": "square",
+          "label": "Square (1:1)"
+        }
+      ],
+      "default": "portrait"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Card border radius",
+      "min": 0,
+      "max": 32,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "Gap between cards",
+      "min": 0,
+      "max": 48,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "padding_top_bottom",
+      "label": "Vertical padding (top/bottom)",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_left_right",
+      "label": "Horizontal padding (left/right)",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "checkbox",
+      "id": "show_header",
+      "label": "Show header",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_handle",
+      "label": "Show Instagram handle",
+      "default": true
     }
   ]
 }

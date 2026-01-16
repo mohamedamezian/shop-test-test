@@ -49,7 +49,7 @@ type Pages = {
   "/app": {
     params: {};
   };
-  "/app/interface": {
+  "/app/dashboard": {
     params: {};
   };
 };
@@ -57,7 +57,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/api/instagram/staged-upload" | "/webhooks/app/scopes_update" | "/api/delete-instagram-data" | "/webhooks/app/uninstalled" | "/api/download-theme" | "/api/cron/refresh" | "/auth/login" | "/instagram" | "/instagram/callback" | "/auth/*" | "/app" | "/app/interface";
+    page: "/" | "/api/instagram/staged-upload" | "/webhooks/app/scopes_update" | "/api/delete-instagram-data" | "/webhooks/app/uninstalled" | "/api/download-theme" | "/api/cron/refresh" | "/auth/login" | "/instagram" | "/instagram/callback" | "/auth/*" | "/app" | "/app/dashboard";
   };
   "routes/api.instagram.staged-upload.tsx": {
     id: "routes/api.instagram.staged-upload";
@@ -95,21 +95,21 @@ type RouteFiles = {
     id: "routes/instagram.callback";
     page: "/instagram/callback";
   };
-  "routes/auth.$.tsx": {
-    id: "routes/auth.$";
-    page: "/auth/*";
-  };
   "routes/_index/route.tsx": {
     id: "routes/_index";
     page: "/";
   };
+  "routes/auth.$.tsx": {
+    id: "routes/auth.$";
+    page: "/auth/*";
+  };
   "routes/app.tsx": {
     id: "routes/app";
-    page: "/app" | "/app/interface";
+    page: "/app" | "/app/dashboard";
   };
-  "routes/app.interface.tsx": {
-    id: "routes/app.interface";
-    page: "/app/interface";
+  "routes/app.dashboard.tsx": {
+    id: "routes/app.dashboard";
+    page: "/app/dashboard";
   };
   "routes/app._index.tsx": {
     id: "routes/app._index";
@@ -128,9 +128,9 @@ type RouteModules = {
   "routes/auth.login": typeof import("./app/routes/auth.login/route.tsx");
   "routes/instagram": typeof import("./app/routes/instagram.tsx");
   "routes/instagram.callback": typeof import("./app/routes/instagram.callback.tsx");
-  "routes/auth.$": typeof import("./app/routes/auth.$.tsx");
   "routes/_index": typeof import("./app/routes/_index/route.tsx");
+  "routes/auth.$": typeof import("./app/routes/auth.$.tsx");
   "routes/app": typeof import("./app/routes/app.tsx");
-  "routes/app.interface": typeof import("./app/routes/app.interface.tsx");
+  "routes/app.dashboard": typeof import("./app/routes/app.dashboard.tsx");
   "routes/app._index": typeof import("./app/routes/app._index.tsx");
 };

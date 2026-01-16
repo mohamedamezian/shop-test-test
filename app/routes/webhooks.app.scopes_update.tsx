@@ -3,6 +3,8 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
+  try {
+    // authenticate.webhook() automatically validates HMAC signature
     const { payload, session, topic, shop } = await authenticate.webhook(request);
     console.log(`Received ${topic} webhook for ${shop}`);
 
@@ -17,5 +19,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             },
         });
     }
-    return new Response();
+    
+    // Always return 200 OK to acknowledge webhook receipt
+    return new Response(null, { status: 200 });
+    
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    
+    // If authenticate.webhook() throws, HMAC validation failed
+    // Return 401 Unauthorized
+    if (error instanceof Error && error.message.includes("HMAC")) {
+      console.error("HMAC validation failed");
+      return new Response("Unauthorized", { status: 401 });
+    }
+    
+    // For other errors, return 200 to prevent retries
+    return new Response(null, { status: 200 });
+  }
 };

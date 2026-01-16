@@ -17,13 +17,7 @@ type Pages = {
   "/api/instagram/staged-upload": {
     params: {};
   };
-  "/webhooks/app/scopes_update": {
-    params: {};
-  };
   "/api/delete-instagram-data": {
-    params: {};
-  };
-  "/webhooks/app/uninstalled": {
     params: {};
   };
   "/api/download-theme": {
@@ -39,6 +33,15 @@ type Pages = {
     params: {};
   };
   "/instagram/callback": {
+    params: {};
+  };
+  "/webhooks": {
+    params: {};
+  };
+  "/webhooks/app/scopes_update": {
+    params: {};
+  };
+  "/webhooks/app/uninstalled": {
     params: {};
   };
   "/auth/*": {
@@ -57,23 +60,15 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/api/instagram/staged-upload" | "/webhooks/app/scopes_update" | "/api/delete-instagram-data" | "/webhooks/app/uninstalled" | "/api/download-theme" | "/api/cron/refresh" | "/auth/login" | "/instagram" | "/instagram/callback" | "/auth/*" | "/app" | "/app/dashboard";
+    page: "/" | "/api/instagram/staged-upload" | "/api/delete-instagram-data" | "/api/download-theme" | "/api/cron/refresh" | "/auth/login" | "/instagram" | "/instagram/callback" | "/webhooks" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled" | "/auth/*" | "/app" | "/app/dashboard";
   };
   "routes/api.instagram.staged-upload.tsx": {
     id: "routes/api.instagram.staged-upload";
     page: "/api/instagram/staged-upload";
   };
-  "routes/webhooks.app.scopes_update.tsx": {
-    id: "routes/webhooks.app.scopes_update";
-    page: "/webhooks/app/scopes_update";
-  };
   "routes/api.delete-instagram-data.tsx": {
     id: "routes/api.delete-instagram-data";
     page: "/api/delete-instagram-data";
-  };
-  "routes/webhooks.app.uninstalled.tsx": {
-    id: "routes/webhooks.app.uninstalled";
-    page: "/webhooks/app/uninstalled";
   };
   "routes/api.download-theme.tsx": {
     id: "routes/api.download-theme";
@@ -94,6 +89,18 @@ type RouteFiles = {
   "routes/instagram.callback.tsx": {
     id: "routes/instagram.callback";
     page: "/instagram/callback";
+  };
+  "routes/webhooks.tsx": {
+    id: "routes/webhooks";
+    page: "/webhooks" | "/webhooks/app/scopes_update" | "/webhooks/app/uninstalled";
+  };
+  "routes/webhooks.app.scopes_update.tsx": {
+    id: "routes/webhooks.app.scopes_update";
+    page: "/webhooks/app/scopes_update";
+  };
+  "routes/webhooks.app.uninstalled.tsx": {
+    id: "routes/webhooks.app.uninstalled";
+    page: "/webhooks/app/uninstalled";
   };
   "routes/_index/route.tsx": {
     id: "routes/_index";
@@ -120,14 +127,15 @@ type RouteFiles = {
 type RouteModules = {
   "root": typeof import("./app/root.tsx");
   "routes/api.instagram.staged-upload": typeof import("./app/routes/api.instagram.staged-upload.tsx");
-  "routes/webhooks.app.scopes_update": typeof import("./app/routes/webhooks.app.scopes_update.tsx");
   "routes/api.delete-instagram-data": typeof import("./app/routes/api.delete-instagram-data.tsx");
-  "routes/webhooks.app.uninstalled": typeof import("./app/routes/webhooks.app.uninstalled.tsx");
   "routes/api.download-theme": typeof import("./app/routes/api.download-theme.tsx");
   "routes/api.cron.refresh": typeof import("./app/routes/api.cron.refresh.tsx");
   "routes/auth.login": typeof import("./app/routes/auth.login/route.tsx");
   "routes/instagram": typeof import("./app/routes/instagram.tsx");
   "routes/instagram.callback": typeof import("./app/routes/instagram.callback.tsx");
+  "routes/webhooks": typeof import("./app/routes/webhooks.tsx");
+  "routes/webhooks.app.scopes_update": typeof import("./app/routes/webhooks.app.scopes_update.tsx");
+  "routes/webhooks.app.uninstalled": typeof import("./app/routes/webhooks.app.uninstalled.tsx");
   "routes/_index": typeof import("./app/routes/_index/route.tsx");
   "routes/auth.$": typeof import("./app/routes/auth.$.tsx");
   "routes/app": typeof import("./app/routes/app.tsx");

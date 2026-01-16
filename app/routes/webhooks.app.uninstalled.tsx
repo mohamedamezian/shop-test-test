@@ -3,9 +3,11 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { shop, session, topic, admin } = await authenticate.webhook(request);
+  try {
+    // authenticate.webhook() automatically validates HMAC signature
+    const { shop, session, topic, admin } = await authenticate.webhook(request);
 
-  console.log(`Received ${topic} webhook for ${shop}`);
+    console.log(`Received ${topic} webhook for ${shop}`);
 
   // Delete Instagram files and metaobject definitions
   if (admin) {
@@ -90,5 +92,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     console.error(`Failed to clean up social accounts for ${shop}:`, error);
   }
 
-  return new Response();
+  // Always return 200 OK to acknowledge webhook receipt
+  return new Response(null, { status: 200 });
+  
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    
+    // If authenticate.webhook() throws, HMAC validation failed
+    // Return 401 Unauthorized
+    if (error instanceof Error && error.message.includes("HMAC")) {
+      console.error("HMAC validation failed");
+      return new Response("Unauthorized", { status: 401 });
+    }
+    
+    // For other errors, return 200 to prevent retries
+    return new Response(null, { status: 200 });
+  }
 };

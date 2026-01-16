@@ -11,6 +11,9 @@ on:
       - '.github/workflows/build-theme-package.yml'
       - 'scripts/create-zip.ts'
 
+permissions:
+  contents: write
+
 jobs:
   build-theme-package:
     runs-on: ubuntu-latest

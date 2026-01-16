@@ -21,9 +21,10 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
+        <h1 className={styles.heading}>Near Native Instagram</h1>
         <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
+          Store Instagram posts as Shopify metaobjects to create your own
+          Instagram feed in Liquid templates.
         </p>
         {showForm && (
           <Form className={styles.form} method="post" action="/auth/login">
@@ -39,16 +40,18 @@ export default function App() {
         )}
         <ul className={styles.list}>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Shopify-native storage.</strong> Store Instagram posts as
+            Shopify metaobjects to create your own Instagram feed in Liquid
+            templates.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Seamless integration.</strong> Easily integrate Instagram
+            content into your Shopify store without any complex setup.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Downloadable Liquid files for Instagram feed</strong>. Get
+            pre-built Liquid files to easily display your Instagram feed on your
+            Shopify store.
           </li>
         </ul>
       </div>

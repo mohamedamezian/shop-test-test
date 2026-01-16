@@ -319,7 +319,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           
           <script>
             setTimeout(() => {
-              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/nn_instagram/app/';
+              window.location.href = 'https://admin.shopify.com/store/${shopSlug}/apps/nn_instagram/app/dashboard';
             }, 3000);
           </script>
         </body>

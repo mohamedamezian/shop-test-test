@@ -272,142 +272,56 @@ export default function Index() {
       <Outlet />
 
       <s-page>
-        {/* Hero Section */}
-        <s-section>
-          <s-box padding="large-500">
-            <s-stack gap="large" alignItems="center">
-              <s-box>
-                <s-heading>
-                  <s-heading>
-                    <s-heading>NN Instagram</s-heading>
-                  </s-heading>
-                </s-heading>
-              </s-box>
-              <s-box maxInlineSize="600px">
-                <s-stack gap="none" alignItems="center">
+        {/* grid template basic*/}
+        <s-stack gap="base">
+          <s-grid gridTemplateColumns="repeat(12, 1fr)" gap="base">
+            <s-grid-item gridColumn="span 12" gridRow="span 1">
+              {/* Header */}
+              <s-section>
+                <s-stack alignItems="center">
+                  <s-heading>NN Instagram</s-heading>
+
                   <s-text>
                     Sync your Instagram posts to Shopify and display them
                     beautifully on your store
                   </s-text>
                 </s-stack>
-              </s-box>
-            </s-stack>
-          </s-box>
-        </s-section>
-
-        {/* Two Column Layout */}
-        <s-grid gridTemplateColumns="repeat(3, 1fr)" gap="base">
-          {/* Left Column - Main Content (spans 2 columns) */}
-          <s-grid-item gridColumn="span 2">
-            {/* About the App Section */}
-            <s-section>
-              <s-card>
-                <s-stack gap="base">
-                  <s-stack gap="small-200">
-                    <s-heading>About the App</s-heading>
-                    <s-text color="subdued">
-                      Instagram Feed Sync - Seamlessly integrate your Instagram
-                      content with Shopify
-                    </s-text>
-                  </s-stack>
+              </s-section>
+            </s-grid-item>
+            <s-grid-item gridColumn="span 8" gridRow="span 2">
+              <s-section>
+                <s-heading>About the App</s-heading>
+                <s-stack gap="small">
+                  <s-text>
+                    Instagram Feed Sync - Seamlessly integrate your Instagram
+                    content with Shopify
+                  </s-text>
 
                   <s-divider />
 
-                  <s-stack gap="base">
-                    <s-stack gap="small-200">
-                      <s-text type="strong">What does this app do?</s-text>
-                      <s-text>
-                        This app automatically syncs your Instagram posts to
-                        your Shopify store, storing them as metaobjects and
-                        files. You can then display your Instagram feed anywhere
-                        on your store using Liquid code or theme blocks.
-                      </s-text>
+                  <s-heading>What does this app do?</s-heading>
+                  <s-text>
+                    This app automatically syncs your Instagram posts to your
+                    Shopify store, storing them as metaobjects and files. You
+                    can then display your Instagram feed anywhere on your store
+                    using Liquid code or theme blocks.
+                  </s-text>
+                  <s-divider />
+                  <s-stack gap="small-200">
+                    <s-heading>Requirements</s-heading>
+                    <s-stack gap="small-100">
+                      <s-unordered-list>
+                        <s-list-item>
+                          Instagram Business or Creator account
+                        </s-list-item>
+                        <s-list-item>
+                          Facebook Page connected to Instagram
+                        </s-list-item>
+                        <s-list-item>
+                          Shopify plan that supports metaobjects
+                        </s-list-item>
+                      </s-unordered-list>
                     </s-stack>
-
-                    <s-stack gap="small-200">
-                      <s-text type="strong">Key Features</s-text>
-                      <s-grid
-                        gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))"
-                        gap="base"
-                      >
-                        <s-grid-item>
-                          <s-stack direction="inline" gap="small-200">
-                            <s-icon type="check" tone="success" />
-                            <s-text>Automatic sync every 24 hours</s-text>
-                          </s-stack>
-                        </s-grid-item>
-                        <s-grid-item>
-                          <s-stack direction="inline" gap="small-200">
-                            <s-icon type="check" tone="success" />
-                            <s-text>Manual sync on demand</s-text>
-                          </s-stack>
-                        </s-grid-item>
-                        <s-grid-item>
-                          <s-stack direction="inline" gap="small-200">
-                            <s-icon type="check" tone="success" />
-                            <s-text>Stores posts as metaobjects</s-text>
-                          </s-stack>
-                        </s-grid-item>
-                        <s-grid-item>
-                          <s-stack direction="inline" gap="small-200">
-                            <s-icon type="check" tone="success" />
-                            <s-text>Uploads media to Shopify files</s-text>
-                          </s-stack>
-                        </s-grid-item>
-                        <s-grid-item>
-                          <s-stack direction="inline" gap="small-200">
-                            <s-icon type="check" tone="success" />
-                            <s-text>Easy theme integration</s-text>
-                          </s-stack>
-                        </s-grid-item>
-                        <s-grid-item>
-                          <s-stack direction="inline" gap="small-200">
-                            <s-icon type="check" tone="success" />
-                            <s-text>No coding required</s-text>
-                          </s-stack>
-                        </s-grid-item>
-                      </s-grid>
-                    </s-stack>
-
-                    <s-stack gap="small-200">
-                      <s-text type="strong">How it works</s-text>
-                      <s-stack gap="small-100">
-                        <s-text>
-                          <strong>1.</strong> Connect your Instagram Business
-                          account
-                        </s-text>
-                        <s-text>
-                          <strong>2.</strong> Sync your posts to create
-                          metaobjects and files in Shopify
-                        </s-text>
-                        <s-text>
-                          <strong>3.</strong> Add the Instagram feed to your
-                          store pages using theme blocks
-                        </s-text>
-                        <s-text>
-                          <strong>4.</strong> Your feed updates automatically
-                          every 24 hours
-                        </s-text>
-                      </s-stack>
-                    </s-stack>
-
-                    <s-divider />
-
-                    <s-stack gap="small-200">
-                      <s-text type="strong">Requirements</s-text>
-                      <s-stack gap="small-100">
-                        <s-text color="subdued">
-                          • Instagram Business or Creator account
-                        </s-text>
-                        <s-text color="subdued">
-                          • Facebook Page connected to Instagram
-                        </s-text>
-                        <s-text color="subdued">
-                          • Shopify plan that supports metaobjects
-                        </s-text>
-                      </s-stack>
-                    </s-stack>
-
                     <s-banner tone="info">
                       <s-stack gap="small-200">
                         <s-text type="strong">Need help?</s-text>
@@ -419,59 +333,11 @@ export default function Index() {
                     </s-banner>
                   </s-stack>
                 </s-stack>
-              </s-card>
-            </s-section>
-          </s-grid-item>
-
-          {/* Right Column - Sidebar (spans 1 column) */}
-          <s-grid-item gridColumn="span 1">
-            {/* Next Steps */}
-            {isSetupComplete && !hasErrors && (
-              <s-section>
-                <s-card>
-                  <s-stack gap="base">
-                    <s-heading>Next Steps</s-heading>
-
-                    <s-stack gap="base">
-                      <s-stack gap="small-100">
-                        <s-text type="strong">1. Connect Your Account</s-text>
-                        <s-text color="subdued">
-                          Head to the dashboard and connect your Instagram
-                          Business account
-                        </s-text>
-                      </s-stack>
-
-                      <s-stack gap="small-100">
-                        <s-text type="strong">2. Sync Your Posts</s-text>
-                        <s-text color="subdued">
-                          Import your Instagram posts with one click
-                        </s-text>
-                      </s-stack>
-
-                      <s-stack gap="small-100">
-                        <s-text type="strong">3. Add to Your Theme</s-text>
-                        <s-text color="subdued">
-                          Display your Instagram feed on any page of your store
-                        </s-text>
-                      </s-stack>
-                    </s-stack>
-
-                    <s-divider />
-
-                    <s-button
-                      variant="primary"
-                      onClick={() => navigate("/app")}
-                    >
-                      Get Started →
-                    </s-button>
-                  </s-stack>
-                </s-card>
               </s-section>
-            )}
+            </s-grid-item>
 
-            {/* App Setup Section */}
-            <s-section>
-              <s-card>
+            <s-grid-item gridColumn="span 4" gridRow="span 6">
+              <s-section>
                 <s-stack gap="base">
                   <s-stack direction="inline" gap="small-200">
                     <s-heading>App Setup</s-heading>
@@ -513,7 +379,7 @@ export default function Index() {
 
                   {/* Setup Details */}
                   <s-stack gap="base">
-                    <s-text type="strong">Metaobject Definitions</s-text>
+                    <s-heading>Metaobject Definitions</s-heading>
 
                     {/* Instagram Post Status */}
                     <s-stack gap="small-200" direction="inline">
@@ -564,26 +430,115 @@ export default function Index() {
                       </s-stack>
                     </>
                   )}
-
-                  {/* Action Button */}
-                  {isSetupComplete && !hasErrors && (
-                    <>
-                      <s-divider />
-                      <s-box>
-                        <s-button
-                          variant="primary"
-                          onClick={() => navigate("/app")}
-                        >
-                          Go to Dashboard →
-                        </s-button>
-                      </s-box>
-                    </>
-                  )}
+                  <s-divider />
                 </s-stack>
-              </s-card>
-            </s-section>
-          </s-grid-item>
-        </s-grid>
+
+                {/* Next Steps */}
+                {isSetupComplete && !hasErrors && (
+                  <s-section>
+                    <s-stack gap="base">
+                      <s-heading>Next Steps</s-heading>
+
+                      <s-stack gap="base">
+                        <s-stack gap="small-100">
+                          <s-text type="strong">1. Connect Your Account</s-text>
+                          <s-text color="subdued">
+                            Head to the dashboard and connect your Instagram
+                            Business account
+                          </s-text>
+                        </s-stack>
+
+                        <s-stack gap="small-100">
+                          <s-text type="strong">2. Sync Your Posts</s-text>
+                          <s-text color="subdued">
+                            Import your Instagram posts with one click
+                          </s-text>
+                        </s-stack>
+
+                        <s-stack gap="small-100">
+                          <s-text type="strong">3. Add to Your Theme</s-text>
+                          <s-text color="subdued">
+                            Display your Instagram feed on any page of your
+                            store
+                          </s-text>
+                        </s-stack>
+                      </s-stack>
+
+                      <s-divider />
+
+                      <s-button
+                        variant="primary"
+                        onClick={() => navigate("/app/dashboard")}
+                      >
+                        Get Started →
+                      </s-button>
+                    </s-stack>
+                  </s-section>
+                )}
+              </s-section>
+            </s-grid-item>
+
+            <s-grid-item gridColumn="span 4" gridRow="span 3">
+              <s-section>
+                <s-stack gap="small-200">
+                  <s-heading>Key Features</s-heading>
+
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check-circle" tone="success" />
+                    <s-text>Automatic sync every 24 hours</s-text>
+                  </s-stack>
+
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check-circle" tone="success" />
+                    <s-text>Manual sync on demand</s-text>
+                  </s-stack>
+
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check-circle" tone="success" />
+                    <s-text>Stores posts as metaobjects</s-text>
+                  </s-stack>
+
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check-circle" tone="success" />
+                    <s-text>Uploads media to Shopify files</s-text>
+                  </s-stack>
+
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check-circle" tone="success" />
+                    <s-text>Easy theme integration</s-text>
+                  </s-stack>
+
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check-circle" tone="success" />
+                    <s-text>No coding required</s-text>
+                  </s-stack>
+                </s-stack>
+              </s-section>
+            </s-grid-item>
+            <s-grid-item gridColumn="span 4" gridRow="span 3">
+              <s-section>
+                <s-stack gap="small-200">
+                  <s-heading>How it works</s-heading>
+                  <s-ordered-list>
+                    <s-list-item>
+                      Connect your Instagram Business account
+                    </s-list-item>
+                    <s-list-item>
+                      Sync your posts to create metaobjects and files in Shopify
+                    </s-list-item>
+                    <s-list-item>
+                      Add the Instagram feed to your store pages using theme
+                      blocks
+                    </s-list-item>
+                    <s-list-item>
+                      Your feed updates automatically every 24 hours
+                    </s-list-item>
+                  </s-ordered-list>
+                </s-stack>
+              </s-section>
+            </s-grid-item>
+          </s-grid>
+        </s-stack>
       </s-page>
     </AppProvider>
   );

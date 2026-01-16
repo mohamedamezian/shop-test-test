@@ -260,6 +260,35 @@ export default function Index() {
     setShowPageModal(false);
   };
 
+  const handleDownloadThemeFiles = async () => {
+    try {
+      // Fetch the file
+      const response = await fetch('/api/download-theme');
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData.message || 'Failed to download theme files');
+        return;
+      }
+      
+      // Get the blob
+      const blob = await response.blob();
+      
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nn-instagram-theme.zip';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download theme files');
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Never";
     const date = new Date(dateString);
@@ -755,10 +784,18 @@ export default function Index() {
                   </s-text>
                 </s-stack>
 
-                <s-banner tone="info">
-                  Coming soon: Download pre-built theme snippets to quickly add
-                  Instagram feeds to your store
-                </s-banner>
+                <s-stack gap="small-200">
+                  <s-text type="strong">Horizon Theme Files</s-text>
+                  <s-text color="subdued">
+                    Download pre-built Instagram carousel snippets optimized for Horizon theme
+                  </s-text>
+                  <s-button 
+                    variant="primary"
+                    onClick={handleDownloadThemeFiles}
+                  >
+                    Download Horizon Files
+                  </s-button>
+                </s-stack>
               </s-stack>
             </s-card>
           </s-section>
@@ -828,6 +865,93 @@ export default function Index() {
           </s-section>
         </>
       )}
+
+      {/* About the App */}
+      <s-section>
+        <s-card>
+          <s-stack gap="base">
+            <s-stack gap="small-200">
+              <s-heading>About the App</s-heading>
+              <s-text color="subdued">
+                Instagram Feed Sync - Seamlessly integrate your Instagram content with Shopify
+              </s-text>
+            </s-stack>
+
+            <s-divider />
+
+            <s-stack gap="base">
+              <s-stack gap="small-200">
+                <s-text type="strong">What does this app do?</s-text>
+                <s-text>
+                  This app automatically syncs your Instagram posts to your Shopify store, 
+                  storing them as metaobjects and files. You can then display your Instagram 
+                  feed anywhere on your store using Liquid code or theme blocks.
+                </s-text>
+              </s-stack>
+
+              <s-stack gap="small-200">
+                <s-text type="strong">Key Features</s-text>
+                <s-stack gap="small-100">
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check" tone="success" />
+                    <s-text>Automatic sync every 24 hours</s-text>
+                  </s-stack>
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check" tone="success" />
+                    <s-text>Manual sync on demand</s-text>
+                  </s-stack>
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check" tone="success" />
+                    <s-icon type="check" tone="success" />
+                    <s-text>Stores posts as Shopify metaobjects</s-text>
+                  </s-stack>
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check" tone="success" />
+                    <s-text>Uploads media to Shopify files</s-text>
+                  </s-stack>
+                  <s-stack direction="inline" gap="small-200">
+                    <s-icon type="check" tone="success" />
+                    <s-text>Easy integration with your theme</s-text>
+                  </s-stack>
+                </s-stack>
+              </s-stack>
+
+              <s-stack gap="small-200">
+                <s-text type="strong">How it works</s-text>
+                <s-text>
+                  1. Connect your Instagram Business account
+                  <br />
+                  2. Sync your posts to create metaobjects and files in Shopify
+                  <br />
+                  3. Add the Instagram feed to your store pages using theme blocks
+                  <br />
+                  4. Your feed updates automatically every 24 hours
+                </s-text>
+              </s-stack>
+
+              <s-divider />
+
+              <s-stack gap="small-200">
+                <s-text type="strong">Requirements</s-text>
+                <s-stack gap="small-100">
+                  <s-text color="subdued">• Instagram Business or Creator account</s-text>
+                  <s-text color="subdued">• Facebook Page connected to Instagram</s-text>
+                  <s-text color="subdued">• Shopify plan that supports metaobjects</s-text>
+                </s-stack>
+              </s-stack>
+
+              <s-banner tone="info">
+                <s-stack gap="small-200">
+                  <s-text type="strong">Need help?</s-text>
+                  <s-text>
+                    Visit our documentation or contact support for assistance with setup and customization.
+                  </s-text>
+                </s-stack>
+              </s-banner>
+            </s-stack>
+          </s-stack>
+        </s-card>
+      </s-section>
     </s-page>
   );
 }

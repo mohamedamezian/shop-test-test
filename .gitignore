@@ -19,6 +19,9 @@ database.sqlite
 /logs
 *.log
 
+# Theme extraction temporary files
+/theme/
+
 /extensions/*/dist
 
 # Ignore shopify files created during app dev

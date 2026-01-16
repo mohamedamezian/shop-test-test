@@ -26,6 +26,9 @@ type Pages = {
   "/webhooks/app/uninstalled": {
     params: {};
   };
+  "/api/download-theme": {
+    params: {};
+  };
   "/api/cron/refresh": {
     params: {};
   };
@@ -54,7 +57,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/api/instagram/staged-upload" | "/webhooks/app/scopes_update" | "/api/delete-instagram-data" | "/webhooks/app/uninstalled" | "/api/cron/refresh" | "/auth/login" | "/instagram" | "/instagram/callback" | "/auth/*" | "/app" | "/app/interface";
+    page: "/" | "/api/instagram/staged-upload" | "/webhooks/app/scopes_update" | "/api/delete-instagram-data" | "/webhooks/app/uninstalled" | "/api/download-theme" | "/api/cron/refresh" | "/auth/login" | "/instagram" | "/instagram/callback" | "/auth/*" | "/app" | "/app/interface";
   };
   "routes/api.instagram.staged-upload.tsx": {
     id: "routes/api.instagram.staged-upload";
@@ -72,6 +75,10 @@ type RouteFiles = {
     id: "routes/webhooks.app.uninstalled";
     page: "/webhooks/app/uninstalled";
   };
+  "routes/api.download-theme.tsx": {
+    id: "routes/api.download-theme";
+    page: "/api/download-theme";
+  };
   "routes/api.cron.refresh.tsx": {
     id: "routes/api.cron.refresh";
     page: "/api/cron/refresh";
@@ -88,13 +95,13 @@ type RouteFiles = {
     id: "routes/instagram.callback";
     page: "/instagram/callback";
   };
-  "routes/_index/route.tsx": {
-    id: "routes/_index";
-    page: "/";
-  };
   "routes/auth.$.tsx": {
     id: "routes/auth.$";
     page: "/auth/*";
+  };
+  "routes/_index/route.tsx": {
+    id: "routes/_index";
+    page: "/";
   };
   "routes/app.tsx": {
     id: "routes/app";
@@ -116,12 +123,13 @@ type RouteModules = {
   "routes/webhooks.app.scopes_update": typeof import("./app/routes/webhooks.app.scopes_update.tsx");
   "routes/api.delete-instagram-data": typeof import("./app/routes/api.delete-instagram-data.tsx");
   "routes/webhooks.app.uninstalled": typeof import("./app/routes/webhooks.app.uninstalled.tsx");
+  "routes/api.download-theme": typeof import("./app/routes/api.download-theme.tsx");
   "routes/api.cron.refresh": typeof import("./app/routes/api.cron.refresh.tsx");
   "routes/auth.login": typeof import("./app/routes/auth.login/route.tsx");
   "routes/instagram": typeof import("./app/routes/instagram.tsx");
   "routes/instagram.callback": typeof import("./app/routes/instagram.callback.tsx");
-  "routes/_index": typeof import("./app/routes/_index/route.tsx");
   "routes/auth.$": typeof import("./app/routes/auth.$.tsx");
+  "routes/_index": typeof import("./app/routes/_index/route.tsx");
   "routes/app": typeof import("./app/routes/app.tsx");
   "routes/app.interface": typeof import("./app/routes/app.interface.tsx");
   "routes/app._index": typeof import("./app/routes/app._index.tsx");

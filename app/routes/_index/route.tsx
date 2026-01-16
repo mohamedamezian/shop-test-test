@@ -278,198 +278,148 @@ export default function Index() {
       <s-page>
         {/* Hero Section */}
         <s-section>
-          <div
-            style={{
-              textAlign: "center",
-              padding: "3rem 1rem",
-              maxWidth: "800px",
-              margin: "0 auto",
-            }}
-          >
-            <div style={{ fontSize: "48px", marginBottom: "1rem" }}>📸</div>
-            <div
-              style={{
-                fontSize: "32px",
-                marginBottom: "1rem",
-                fontWeight: "600",
-              }}
-            >
-              NN Instagram
-            </div>
-            <div style={{ fontSize: "18px", color: "#6d7175" }}>
-              Sync your Instagram posts to Shopify and display them beautifully
-              on your store
-            </div>
-          </div>
+          <s-box padding="large-500">
+            <s-stack gap="large" alignItems="center">
+              <s-box>
+                <s-heading>
+                  <s-heading>
+                    <s-heading>NN Instagram</s-heading>
+                  </s-heading>
+                </s-heading>
+              </s-box>
+              <s-box maxInlineSize="600px">
+                <s-stack gap="none" alignItems="center">
+                  <s-text>
+                    Sync your Instagram posts to Shopify and display them beautifully on your store
+                  </s-text>
+                </s-stack>
+              </s-box>
+            </s-stack>
+          </s-box>
         </s-section>
 
-        {/* Setup Status Card */}
-        <s-section>
-          <s-card>
-            <s-stack gap="base">
-              <s-stack direction="inline" gap="small-200">
-                <s-heading>App Setup</s-heading>
-                {isSetupComplete && !hasErrors && (
-                  <s-badge tone="success">Ready</s-badge>
-                )}
-                {hasErrors && (
-                  <s-badge tone="critical">Action Required</s-badge>
-                )}
+        {/* Two Column Layout */}
+        <s-grid gridTemplateColumns="repeat(3, 1fr)" gap="base">
+          {/* Left Column - Main Content (spans 2 columns) */}
+          <s-grid-item gridColumn="span 2">
+            {/* About the App Section */}
+            <s-section>
+            <s-card>
+              <s-stack gap="base">
+              <s-stack gap="small-200">
+                <s-heading>About the App</s-heading>
+                <s-text color="subdued">
+                  Instagram Feed Sync - Seamlessly integrate your Instagram content with Shopify
+                </s-text>
               </s-stack>
-
-              {/* Success Banner */}
-              {isSetupComplete && !hasErrors && (
-                <s-banner tone="success">
-                  <s-stack gap="small-200">
-                    <s-text type="strong">The app is ready to use!</s-text>
-                    <s-text>
-                      All required metaobject definitions have been created
-                      successfully.
-                    </s-text>
-                  </s-stack>
-                </s-banner>
-              )}
-
-              {/* Error Banner */}
-              {hasErrors && (
-                <s-banner tone="critical">
-                  <s-stack gap="small-200">
-                    <s-text type="strong">Setup encountered errors</s-text>
-                    <s-text>
-                      Please check the details below and contact support if the
-                      issue persists.
-                    </s-text>
-                  </s-stack>
-                </s-banner>
-              )}
 
               <s-divider />
 
-              {/* Setup Details */}
               <s-stack gap="base">
-                <s-text type="strong">Metaobject Definitions</s-text>
+                <s-stack gap="small-200">
+                  <s-text type="strong">What does this app do?</s-text>
+                  <s-text>
+                    This app automatically syncs your Instagram posts to your Shopify store, 
+                    storing them as metaobjects and files. You can then display your Instagram 
+                    feed anywhere on your store using Liquid code or theme blocks.
+                  </s-text>
+                </s-stack>
 
-                {/* Instagram Post Status */}
-                <s-stack gap="small-200" direction="inline">
-                  {(existsPost || createdPost) && !hasErrors ? (
-                    <s-icon type="check-circle" tone="success" />
-                  ) : (
-                    <s-icon type="alert-circle" tone="critical" />
-                  )}
+                <s-stack gap="small-200">
+                  <s-text type="strong">Key Features</s-text>
+                  <s-grid gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))" gap="base">
+                    <s-grid-item>
+                      <s-stack direction="inline" gap="small-200">
+                        <s-icon type="check" tone="success" />
+                        <s-text>Automatic sync every 24 hours</s-text>
+                      </s-stack>
+                    </s-grid-item>
+                    <s-grid-item>
+                      <s-stack direction="inline" gap="small-200">
+                        <s-icon type="check" tone="success" />
+                        <s-text>Manual sync on demand</s-text>
+                      </s-stack>
+                    </s-grid-item>
+                    <s-grid-item>
+                      <s-stack direction="inline" gap="small-200">
+                        <s-icon type="check" tone="success" />
+                        <s-text>Stores posts as metaobjects</s-text>
+                      </s-stack>
+                    </s-grid-item>
+                    <s-grid-item>
+                      <s-stack direction="inline" gap="small-200">
+                        <s-icon type="check" tone="success" />
+                        <s-text>Uploads media to Shopify files</s-text>
+                      </s-stack>
+                    </s-grid-item>
+                    <s-grid-item>
+                      <s-stack direction="inline" gap="small-200">
+                        <s-icon type="check" tone="success" />
+                        <s-text>Easy theme integration</s-text>
+                      </s-stack>
+                    </s-grid-item>
+                    <s-grid-item>
+                      <s-stack direction="inline" gap="small-200">
+                        <s-icon type="check" tone="success" />
+                        <s-text>No coding required</s-text>
+                      </s-stack>
+                    </s-grid-item>
+                  </s-grid>
+                </s-stack>
+
+                <s-stack gap="small-200">
+                  <s-text type="strong">How it works</s-text>
                   <s-stack gap="small-100">
-                    <s-text type="strong">Instagram Post</s-text>
-                    <s-text color="subdued">
-                      {createdPost && "Created during setup"}
-                      {existsPost && !createdPost && "Already configured"}
-                      {!existsPost && !createdPost && "Not configured"}
+                    <s-text>
+                      <strong>1.</strong> Connect your Instagram Business account
+                    </s-text>
+                    <s-text>
+                      <strong>2.</strong> Sync your posts to create metaobjects and files in Shopify
+                    </s-text>
+                    <s-text>
+                      <strong>3.</strong> Add the Instagram feed to your store pages using theme blocks
+                    </s-text>
+                    <s-text>
+                      <strong>4.</strong> Your feed updates automatically every 24 hours
                     </s-text>
                   </s-stack>
                 </s-stack>
 
-                {/* Instagram List Status */}
-                <s-stack gap="small-200" direction="inline">
-                  {(existsList || createdList) && !hasErrors ? (
-                    <s-icon type="check-circle" tone="success" />
-                  ) : (
-                    <s-icon type="alert-circle" tone="critical" />
-                  )}
+                <s-divider />
+
+                <s-stack gap="small-200">
+                  <s-text type="strong">Requirements</s-text>
                   <s-stack gap="small-100">
-                    <s-text type="strong">Instagram List</s-text>
-                    <s-text color="subdued">
-                      {createdList && "Created during setup"}
-                      {existsList && !createdList && "Already configured"}
-                      {!existsList && !createdList && "Not configured"}
-                    </s-text>
+                    <s-text color="subdued">• Instagram Business or Creator account</s-text>
+                    <s-text color="subdued">• Facebook Page connected to Instagram</s-text>
+                    <s-text color="subdued">• Shopify plan that supports metaobjects</s-text>
                   </s-stack>
                 </s-stack>
-              </s-stack>
 
-              {/* Error Details */}
-              {hasErrors && (
-                <>
-                  <s-divider />
+                <s-banner tone="info">
                   <s-stack gap="small-200">
-                    <s-text type="strong">Error Details:</s-text>
-                    {errors.map((err: string, i: number) => (
-                      <s-text key={i} color="subdued">
-                        • {err}
-                      </s-text>
-                    ))}
+                    <s-text type="strong">Need help?</s-text>
+                    <s-text>
+                      Visit our documentation or contact support for assistance with setup and customization.
+                    </s-text>
                   </s-stack>
-                </>
-              )}
-
-              {/* Action Button */}
-              {isSetupComplete && !hasErrors && (
-                <>
-                  <s-divider />
-                  <s-box>
-                    <s-button
-                      variant="primary"
-                      onClick={() => navigate("/app")}
-                    >
-                      Go to Dashboard →
-                    </s-button>
-                  </s-box>
-                </>
-              )}
+                </s-banner>
+              </s-stack>
             </s-stack>
           </s-card>
-        </s-section>
+          </s-section>
+        </s-grid-item>
 
-        {/* Features Section */}
-        <s-section>
-          <s-card>
-            <s-stack gap="base">
-              <s-heading>What You Can Do</s-heading>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                  gap: "1.5rem",
-                  marginTop: "1rem",
-                }}
-              >
-                {/* Feature 1 */}
-                <s-stack gap="small-200">
-                  <s-icon type="connect" />
-                  <s-text type="strong">Connect Instagram</s-text>
-                  <s-text color="subdued">
-                    Link your Instagram Business account in seconds
-                  </s-text>
-                </s-stack>
-
-                {/* Feature 2 */}
-                <s-stack gap="small-200">
-                  <s-icon type="refresh" />
-                  <s-text type="strong">Auto Sync</s-text>
-                  <s-text color="subdued">
-                    Posts sync automatically every 24 hours
-                  </s-text>
-                </s-stack>
-
-                {/* Feature 3 */}
-                <s-stack gap="small-200">
-                  <s-icon type="settings" />
-                  <s-text type="strong">Customizable Display</s-text>
-                  <s-text color="subdued">
-                    Add beautiful Instagram feeds to any page
-                  </s-text>
-                </s-stack>
-              </div>
-            </s-stack>
-          </s-card>
-        </s-section>
-
-        {/* Next Steps */}
-        {isSetupComplete && !hasErrors && (
-          <s-section>
+        {/* Right Column - Sidebar (spans 1 column) */}
+        <s-grid-item gridColumn="span 1">
+          {/* Next Steps */}
+          {isSetupComplete && !hasErrors && (
+            <s-section>
             <s-card>
               <s-stack gap="base">
                 <s-heading>Next Steps</s-heading>
 
-                <s-stack gap="small-200">
+                <s-stack gap="base">
                   <s-stack gap="small-100">
                     <s-text type="strong">1. Connect Your Account</s-text>
                     <s-text color="subdued">
@@ -500,8 +450,124 @@ export default function Index() {
                 </s-button>
               </s-stack>
             </s-card>
-          </s-section>
-        )}
+            </s-section>
+          )}
+          
+          {/* App Setup Section */}
+          <s-section>
+              <s-card>
+              <s-stack gap="base">
+                <s-stack direction="inline" gap="small-200">
+                  <s-heading>App Setup</s-heading>
+                  {isSetupComplete && !hasErrors && (
+                    <s-badge tone="success">Ready</s-badge>
+                  )}
+                  {hasErrors && (
+                    <s-badge tone="critical">Action Required</s-badge>
+                  )}
+                </s-stack>
+
+                {/* Success Banner */}
+                {isSetupComplete && !hasErrors && (
+                  <s-banner tone="success">
+                    <s-stack gap="small-200">
+                      <s-text type="strong">The app is ready to use!</s-text>
+                      <s-text>
+                        All required metaobject definitions have been created
+                        successfully.
+                      </s-text>
+                    </s-stack>
+                  </s-banner>
+                )}
+
+                {/* Error Banner */}
+                {hasErrors && (
+                  <s-banner tone="critical">
+                    <s-stack gap="small-200">
+                      <s-text type="strong">Setup encountered errors</s-text>
+                      <s-text>
+                        Please check the details below and contact support if the
+                        issue persists.
+                      </s-text>
+                    </s-stack>
+                  </s-banner>
+                )}
+
+                <s-divider />
+
+                {/* Setup Details */}
+                <s-stack gap="base">
+                  <s-text type="strong">Metaobject Definitions</s-text>
+
+                  {/* Instagram Post Status */}
+                  <s-stack gap="small-200" direction="inline">
+                    {(existsPost || createdPost) && !hasErrors ? (
+                      <s-icon type="check-circle" tone="success" />
+                    ) : (
+                      <s-icon type="alert-circle" tone="critical" />
+                    )}
+                    <s-stack gap="small-100">
+                      <s-text type="strong">Instagram Post</s-text>
+                      <s-text color="subdued">
+                        {createdPost && "Created during setup"}
+                        {existsPost && !createdPost && "Already configured"}
+                        {!existsPost && !createdPost && "Not configured"}
+                      </s-text>
+                    </s-stack>
+                  </s-stack>
+
+                  {/* Instagram List Status */}
+                  <s-stack gap="small-200" direction="inline">
+                    {(existsList || createdList) && !hasErrors ? (
+                      <s-icon type="check-circle" tone="success" />
+                    ) : (
+                      <s-icon type="alert-circle" tone="critical" />
+                    )}
+                    <s-stack gap="small-100">
+                      <s-text type="strong">Instagram List</s-text>
+                      <s-text color="subdued">
+                        {createdList && "Created during setup"}
+                        {existsList && !createdList && "Already configured"}
+                        {!existsList && !createdList && "Not configured"}
+                      </s-text>
+                    </s-stack>
+                  </s-stack>
+                </s-stack>
+
+                {/* Error Details */}
+                {hasErrors && (
+                  <>
+                    <s-divider />
+                    <s-stack gap="small-200">
+                      <s-text type="strong">Error Details:</s-text>
+                      {errors.map((err: string, i: number) => (
+                        <s-text key={i} color="subdued">
+                          • {err}
+                        </s-text>
+                      ))}
+                    </s-stack>
+                  </>
+                )}
+
+                {/* Action Button */}
+                {isSetupComplete && !hasErrors && (
+                  <>
+                    <s-divider />
+                    <s-box>
+                      <s-button
+                        variant="primary"
+                        onClick={() => navigate("/app")}
+                      >
+                        Go to Dashboard →
+                      </s-button>
+                    </s-box>
+                  </>
+                )}
+              </s-stack>
+            </s-card>
+            </s-section>
+          </s-grid-item>
+        </s-grid>
       </s-page>
     </AppProvider>
   );

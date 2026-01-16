@@ -4,109 +4,101 @@ import db from "../db.server";
 
 /**
  * GDPR Compliance Webhooks Handler
- * 
- * This route handles mandatory GDPR webhooks for App Store submission:
- * - customers/data_request: Handle customer data access requests
- * - customers/redact: Handle customer data deletion requests
- * - shop/redact: Handle shop data deletion (48 hours after app uninstall)
- * 
- * HMAC validation is automatically handled by authenticate.webhook()
+ *
+ * This endpoint handles all mandatory GDPR compliance webhooks:
+ * - customers/data_request: Customer requests their data
+ * - customers/redact: Request to delete customer data
+ * - shop/redact: Request to delete all shop data (48h after uninstall)
+ *
+ * For this app (Near Native Reviews):
+ * - Reviews are stored in Shopify metaobjects (nn_reviews)
+ * - No customer data is stored in external databases
+ * - Session data is stored in our database (cleaned up on shop/redact)
  */
 export const action = async ({ request }: ActionFunctionArgs) => {
-  try {
-    // authenticate.webhook() automatically validates HMAC signature
-    const { topic, shop, payload } = await authenticate.webhook(request);
+  const { shop, topic, payload } = await authenticate.webhook(request);
 
-    console.log(`Received ${topic} webhook for ${shop}`);
+  console.log(`[GDPR] Received ${topic} webhook for ${shop}`);
 
-    switch (topic) {
-      case "CUSTOMERS_DATA_REQUEST":
-        // Handle customer data request (GDPR Article 15)
-        // You should:
-        // 1. Collect all customer data you store
-        // 2. Send it to the customer or shop owner
-        // 3. Log the request for compliance
-        
-        console.log(`Customer data request received for shop: ${shop}`);
-        console.log("Customer info:", payload);
-        
-        // Example: Check if you store any customer data
-        // In this Instagram app, we typically don't store customer data
-        // We only store shop-level Instagram data
-        
-        // If you need to send data back, implement email notification here
-        
-        break;
+  switch (topic) {
+    case "CUSTOMERS_DATA_REQUEST": {
+      const data = payload as {
+        shop_id: number;
+        shop_domain: string;
+        orders_requested: number[];
+        data_request: { id: number };
+      };
 
-      case "CUSTOMERS_REDACT":
-        // Handle customer data deletion (GDPR Article 17 - Right to be forgotten)
-        // You should:
-        // 1. Delete all data related to this customer
-        // 2. Log the deletion for compliance
-        
-        console.log(`Customer data redaction requested for shop: ${shop}`);
-        console.log("Customer info:", payload);
-        
-        // Example: Delete customer-specific data if you store any
-        // For this Instagram app, we don't store individual customer data
-        // so there's nothing to delete
-        
-        break;
+      console.log(`[GDPR] Data request ID: ${data.data_request.id}`);
 
-      case "SHOP_REDACT":
-        // Handle shop data deletion (GDPR Article 17)
-        // Called 48 hours after merchant uninstalls your app
-        // You MUST delete all shop data
-        
-        console.log(`Shop data redaction requested for shop: ${shop}`);
-        console.log("Shop info:", payload);
-        
-        try {
-          // Delete all data for this shop
-          // 1. Delete social accounts (Instagram connections)
-          await db.socialAccount.deleteMany({
-            where: { shop },
-          });
-          console.log(`✓ Deleted social accounts for ${shop}`);
-          
-          // 2. Delete sessions
-          await db.session.deleteMany({
-            where: { shop },
-          });
-          console.log(`✓ Deleted sessions for ${shop}`);
-          
-          // Note: Shopify metaobjects and files are already deleted when the app is uninstalled
-          // No need to manually delete them here
-          
-          console.log(`✓ Successfully redacted all data for shop: ${shop}`);
-        } catch (error) {
-          console.error(`Error redacting data for shop ${shop}:`, error);
-          // Don't throw - return 200 to acknowledge receipt
-          // Log error for manual review
-        }
-        
-        break;
+      console.log(
+        `[GDPR] Orders requested: ${data.orders_requested.join(", ")}`,
+      );
 
-      default:
-        console.log(`Unhandled webhook topic: ${topic}`);
+      // Since we store all data in Shopify metaobjects, no additional action is needed.
+      console.log(
+        `[GDPR] ✓ Data request acknowledged. All customer data is stored in Shopify metaobjects.`,
+      );
+
+      return new Response("Data request acknowledged", { status: 200 });
     }
 
-    // Always return 200 OK to acknowledge receipt
-    // This prevents Shopify from retrying the webhook
-    return new Response(null, { status: 200 });
-    
-  } catch (error) {
-    console.error("Webhook processing error:", error);
-    
-    // If authenticate.webhook() throws, it means HMAC validation failed
-    // Return 401 Unauthorized
-    if (error instanceof Error && error.message.includes("HMAC")) {
-      console.error("HMAC validation failed");
-      return new Response("Unauthorized", { status: 401 });
+    case "CUSTOMERS_REDACT": {
+      const data = payload as {
+        shop_id: number;
+        shop_domain: string;
+        orders_to_redact: number[];
+      };
+
+      console.log(
+        `[GDPR] Orders to redact: ${data.orders_to_redact.join(", ")}`,
+      );
+
+      // Since we store all data in Shopify metaobjects and don't maintain external databases,
+      // Shopify handles metaobject cleanup when customers are deleted.
+      console.log(
+        `[GDPR] ✓ Customer redaction acknowledged. All data is managed by Shopify metaobjects.`,
+      );
+
+      return new Response("Customer redaction acknowledged", { status: 200 });
     }
-    
-    // For other errors, still return 200 to prevent retries
-    // but log the error for investigation
-    return new Response(null, { status: 200 });
+
+    case "SHOP_REDACT": {
+      const data = payload as {
+        shop_id: number;
+        shop_domain: `${string}.myshopify.com`;
+      };
+
+      console.log(
+        `[GDPR] Shop to redact - ID: ${data.shop_id}, Domain: ${data.shop_domain}`,
+      );
+
+      try {
+        // Delete all session data for this shop from our database
+        const deletedSessions = await db.session.deleteMany({
+          where: { shop: data.shop_domain },
+        });
+
+        console.log(
+          `[GDPR] ✓ Deleted ${deletedSessions.count} session(s) for shop ${data.shop_domain}`,
+        );
+
+        console.log(
+          `[GDPR] ✓ Shop data redaction complete. Review data remains in shop's metaobjects.`,
+        );
+
+        return new Response("Shop data redacted successfully", { status: 200 });
+      } catch (error) {
+        console.error(`[GDPR] Error redacting shop data:`, error);
+        // Still return 200 to acknowledge receipt
+        return new Response("Shop redaction acknowledged with errors", {
+          status: 200,
+        });
+      }
+    }
+
+    default:
+      console.log(`[Webhook] Unhandled topic: ${topic}`);
+      return new Response("Webhook received", { status: 200 });
   }
 };

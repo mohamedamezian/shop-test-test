@@ -5,7 +5,8 @@ import { fileURLToPath } from 'url';
 import archiver from 'archiver';
 
 /**
- * Script to download NN Instagram theme files from GitHub and create a zip for distribution
+ * Script to download Instagram-specific theme files from GitHub and create a distributable zip
+ * The zip maintains the exact folder structure so merchants can drag-and-drop into their theme
  * Usage: tsx scripts/create-zip.ts
  */
 
@@ -14,14 +15,15 @@ const __dirname = path.dirname(__filename);
 
 const GITHUB_REPO = 'mohamedamezian/NN-Instagram-Carousel';
 const GITHUB_API = 'https://api.github.com';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Optional: for private repos or to avoid rate limits
 
 const appRootDir = path.resolve(__dirname, '..');
 const outputThemeDir = path.join(appRootDir, 'theme');
 const outputZipPath = path.join(appRootDir, 'public', 'nn-instagram-theme.zip');
 
-console.log('🔍 Fetching Instagram files from GitHub:', GITHUB_REPO);
-console.log('📁 Output directory:', outputThemeDir);
-console.log('📦 Zip file location:', outputZipPath);
+console.log('🔍 Downloading Instagram theme files from:', GITHUB_REPO);
+console.log('📁 Temporary directory:', outputThemeDir);
+console.log('📦 Output zip:', outputZipPath);
 
 interface GitHubTreeItem {
   path: string;
@@ -39,20 +41,36 @@ interface GitHubTree {
   truncated: boolean;
 }
 
-async function fetchGitHubTree(): Promise<GitHubTreeItem[]> {
-  console.log('\n📡 Fetching repository tree...');
+interface RepoData {
+  default_branch: string;
+}
+
+async function fetchGitHubTree(): Promise<{ tree: GitHubTreeItem[]; defaultBranch: string }> {
+  console.log('\n📡 Fetching repository information...');
+  
+  const headers: HeadersInit = {
+    'Accept': 'application/vnd.github.v3+json',
+  };
+  
+  if (GITHUB_TOKEN) {
+    headers['Authorization'] = `token ${GITHUB_TOKEN}`;
+    console.log('🔑 Using GitHub token for authentication');
+  }
   
   // Get default branch
-  const repoResponse = await fetch(`${GITHUB_API}/repos/${GITHUB_REPO}`);
+  const repoResponse = await fetch(`${GITHUB_API}/repos/${GITHUB_REPO}`, { headers });
   if (!repoResponse.ok) {
     throw new Error(`Failed to fetch repository info: ${repoResponse.statusText}`);
   }
-  const repoData = await repoResponse.json();
+  const repoData: RepoData = await repoResponse.json();
   const defaultBranch = repoData.default_branch || 'main';
+  
+  console.log(`📌 Default branch: ${defaultBranch}`);
   
   // Get tree for default branch
   const treeResponse = await fetch(
-    `${GITHUB_API}/repos/${GITHUB_REPO}/git/trees/${defaultBranch}?recursive=1`
+    `${GITHUB_API}/repos/${GITHUB_REPO}/git/trees/${defaultBranch}?recursive=1`,
+    { headers }
   );
   
   if (!treeResponse.ok) {
@@ -65,22 +83,34 @@ async function fetchGitHubTree(): Promise<GitHubTreeItem[]> {
     console.warn('⚠️  Tree was truncated, some files may be missing');
   }
   
-  return treeData.tree;
+  return { tree: treeData.tree, defaultBranch };
 }
 
 function isInstagramFile(filePath: string): boolean {
   const lowerPath = filePath.toLowerCase();
-  return (
-    lowerPath.includes('nn-instagram') ||
-    lowerPath.includes('nn_instagram') ||
-    lowerPath.includes('instagram-carousel') ||
-    lowerPath.includes('instagram_carousel')
-  );
+  
+  // Check if the file path or filename contains "instagram"
+  return lowerPath.includes('instagram');
 }
 
-async function downloadFile(item: GitHubTreeItem): Promise<Buffer> {
-  const rawUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${item.path}`;
-  const response = await fetch(rawUrl);
+function isThemeFile(filePath: string): boolean {
+  // Only include files that are in typical Shopify theme directories
+  const themeDirs = ['sections', 'blocks', 'snippets', 'templates', 'assets', 'layout', 'locales', 'config'];
+  const pathParts = filePath.split('/');
+  
+  // Check if the first directory is a theme directory
+  return themeDirs.includes(pathParts[0]);
+}
+
+async function downloadFile(item: GitHubTreeItem, defaultBranch: string): Promise<Buffer> {
+  const rawUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/${defaultBranch}/${item.path}`;
+  
+  const headers: HeadersInit = {};
+  if (GITHUB_TOKEN) {
+    headers['Authorization'] = `token ${GITHUB_TOKEN}`;
+  }
+  
+  const response = await fetch(rawUrl, { headers });
   
   if (!response.ok) {
     throw new Error(`Failed to download ${item.path}: ${response.statusText}`);
@@ -101,40 +131,61 @@ async function extractFiles() {
   fs.mkdirSync(outputThemeDir, { recursive: true });
 
   // Fetch repository tree
-  const allFiles = await fetchGitHubTree();
+  const { tree: allFiles, defaultBranch } = await fetchGitHubTree();
   
-  // Filter for Instagram-related files (blobs only, not directories)
+  // Filter for Instagram-related theme files (blobs only, not directories)
   const instagramFiles = allFiles.filter(
-    item => item.type === 'blob' && isInstagramFile(item.path)
+    item => item.type === 'blob' && isInstagramFile(item.path) && isThemeFile(item.path)
   );
 
-  console.log(`\n✨ Found ${instagramFiles.length} Instagram files:`);
+  console.log(`\n✨ Found ${instagramFiles.length} Instagram theme files:\n`);
 
   if (instagramFiles.length === 0) {
-    console.error('❌ No Instagram files found in repository');
+    console.error('❌ No Instagram theme files found in repository');
+    console.log('💡 Make sure the repository contains files with "instagram" in their name/path');
     process.exit(1);
   }
 
-  // Download and save files
+  // Group files by directory for better logging
+  const filesByDir: Record<string, string[]> = {};
+  instagramFiles.forEach(file => {
+    const dir = path.dirname(file.path);
+    if (!filesByDir[dir]) filesByDir[dir] = [];
+    filesByDir[dir].push(path.basename(file.path));
+  });
+
+  // Log grouped files
+  Object.entries(filesByDir).forEach(([dir, files]) => {
+    console.log(`  📁 ${dir}/`);
+    files.forEach(file => console.log(`     └─ ${file}`));
+  });
+
+  console.log('\n⬇️  Downloading files...');
+
+  // Download and save files, preserving folder structure
   for (const file of instagramFiles) {
     const destPath = path.join(outputThemeDir, file.path);
     const destDir = path.dirname(destPath);
 
-    console.log(`  📄 ${file.path}`);
-
-    // Create destination directory
+    // Create destination directory structure
     fs.mkdirSync(destDir, { recursive: true });
 
     // Download and save file
-    const content = await downloadFile(file);
-    fs.writeFileSync(destPath, content);
+    try {
+      const content = await downloadFile(file, defaultBranch);
+      fs.writeFileSync(destPath, content);
+      console.log(`  ✓ ${file.path}`);
+    } catch (error) {
+      console.error(`  ✗ Failed to download ${file.path}:`, error);
+      throw error;
+    }
   }
 
   console.log(`\n✅ Downloaded ${instagramFiles.length} files to ./theme`);
 }
 
 async function createZip() {
-  console.log('\n📦 Creating zip file...');
+  console.log('\n📦 Creating zip file with theme structure...');
 
   // Ensure public directory exists
   const publicDir = path.join(appRootDir, 'public');
@@ -154,8 +205,8 @@ async function createZip() {
     });
 
     output.on('close', () => {
-      const sizeInMB = (archive.pointer() / 1024 / 1024).toFixed(2);
-      console.log(`✅ Zip file created: ${sizeInMB} MB`);
+      const sizeInKB = (archive.pointer() / 1024).toFixed(2);
+      console.log(`✅ Zip file created: ${sizeInKB} KB`);
       console.log(`📍 Location: ${outputZipPath}`);
       resolve();
     });
@@ -167,7 +218,8 @@ async function createZip() {
 
     archive.pipe(output);
 
-    // Add the theme directory to the zip
+    // Add the theme directory contents to the zip root
+    // This preserves the folder structure (sections/, blocks/, etc.)
     archive.directory(outputThemeDir, false);
 
     archive.finalize();
@@ -176,13 +228,29 @@ async function createZip() {
 
 async function main() {
   try {
+    console.log('╔════════════════════════════════════════════════════════╗');
+    console.log('║  NN Instagram Theme Package Creator                    ║');
+    console.log('╚════════════════════════════════════════════════════════╝\n');
+
     await extractFiles();
     await createZip();
 
-    console.log('\n🎉 Successfully created NN Instagram theme package!');
-    console.log('💡 Users can now download and extract this zip into their theme directory.');
+    console.log('\n╔════════════════════════════════════════════════════════╗');
+    console.log('║  🎉 Successfully created Instagram theme package!      ║');
+    console.log('╚════════════════════════════════════════════════════════╝');
+    console.log('\n📦 Zip structure:');
+    console.log('   sections/');
+    console.log('     └─ instagram-carousel.liquid');
+    console.log('   blocks/');
+    console.log('     └─ instagram-post-*.liquid');
+    console.log('   ...\n');
+    console.log('💡 Merchants can:');
+    console.log('   1. Download the zip file');
+    console.log('   2. Extract it');
+    console.log('   3. Drag folders into their theme directory\n');
+
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('\n❌ Error:', error);
     process.exit(1);
   }
 }

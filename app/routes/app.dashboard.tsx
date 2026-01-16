@@ -185,11 +185,12 @@ export default function Index() {
           setSyncProgress(100);
           setSyncStatus("✓ Sync completed successfully!");
 
-          // Reset and let the fetcher auto-revalidate the loader
+          // Reset and refresh the page to show updated data
           setTimeout(() => {
             setIsSyncing(false);
             setSyncStatus("");
             setSyncProgress(0);
+            window.location.reload();
           }, 2000);
         }, 1500);
       }, 2000);
@@ -353,7 +354,7 @@ export default function Index() {
       id: 3,
       title: "Add to Theme",
       description:
-        "Add the Instagram feed block to your store pages (optional)",
+        "Add the Instagram feed block to your store pages (optional). Make sure to click the save button in the theme editor.",
       completed: hasAddedToTheme,
       current: false, // Never show as current step
       action: handleAddToTheme,
@@ -522,7 +523,7 @@ export default function Index() {
                     <s-text type="strong">🎉 All set up!</s-text>
                     <s-text>
                       Your Instagram feed is now synced and ready to display on
-                      your store. You can manage your posts and settings below.
+                      your store.
                     </s-text>
                   </s-stack>
                 </s-banner>

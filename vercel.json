@@ -5,6 +5,10 @@
     {
       "path": "/api/cron/refresh",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/instagram/staged-upload",
+      "schedule": "/5 * * * *"
     }
   ]
 }
